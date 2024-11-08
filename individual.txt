@@ -1,7 +1,6 @@
 package individualka3;
 import java.util.*;
 public class Individualka3 {
-
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         Scanner sc2 = new Scanner(System.in);
@@ -15,8 +14,7 @@ public class Individualka3 {
             System.out.print("enter number: ");
             int number = sc.nextInt();
             System.out.print("enter year: ");
-            int year = sc.nextInt();
-            
+            int year = sc.nextInt();       
             Exhibit e = new Exhibit(name, number, year);
             hm.add(e);
         }
@@ -25,6 +23,75 @@ public class Individualka3 {
         System.out.println();
         hm.sortByYear();
         hm.print();
+    }  
+}
+
+package individualka3;
+import java.util.*;
+public class Exhibit {
+    private String name;
+    private int number, year;
+    Exhibit(String name, int number, int year) {
+        this.name = name;
+        this.number = number;
+        this.year = year;
     }
-    
+    public String getName() {
+        return this.name;
+    }
+    public int getYear() {
+        return this.year;
+    }
+    public String toString() {
+        return "exhibit number " + number + ": " + name + " (" + year + ")";
+    }
+    public static Comparator<Exhibit> NameComparator = new Comparator<Exhibit>() {
+        public int compare(Exhibit e1, Exhibit e2){
+            return e1.getName().compareTo(e2.getName());
+        }
+    };
+    public static Comparator<Exhibit> YearComparator = new Comparator<Exhibit>() {
+        public int compare(Exhibit e1, Exhibit e2){
+            return e1.getYear()-e2.getYear();
+        }
+    };
+}
+
+package individualka3;
+import java.util.*;
+public class HistoricMuseum {
+    ArrayList<Exhibit> a;
+    HistoricMuseum() {
+        a = new ArrayList<Exhibit>();
+    }
+    //поиск
+    int search(String name){
+        int p = -1;
+        for(int i = 0; i < a.size(); i++)
+            if (name.equalsIgnoreCase(a.get(i).getName())) p = i;
+        return p;
+    }
+    //добавление
+    public void add(Exhibit e) {
+        a.add(e);
+    }
+    //удаление
+    public void delete(String name){
+        int p = search(name);
+        if (p > -1){
+            a.remove(p);
+            System.out.println("exhibit " + p + " is delete");
+        }
+        else System.out.println("no such exhibit");
+    }
+    public void sortByName(){
+        a.sort(Exhibit.NameComparator);
+    }
+    public void sortByYear(){
+        a.sort(Exhibit.YearComparator);
+    }
+    public void print() {
+        for(int i = 0; i < a.size(); i++)
+            System.out.println(a.get(i).toString());
+    }
 }
