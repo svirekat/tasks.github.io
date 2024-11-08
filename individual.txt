@@ -1,0 +1,30 @@
+package individualka3;
+import java.util.*;
+public class Individualka3 {
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Scanner sc2 = new Scanner(System.in);
+        HistoricMuseum hm = new HistoricMuseum();
+        System.out.print("enter n: ");
+        int n = sc.nextInt();
+        for (int i = 0; i < n; i++)
+        {
+            System.out.print("enter name: ");
+            String name = sc2.nextLine();
+            System.out.print("enter number: ");
+            int number = sc.nextInt();
+            System.out.print("enter year: ");
+            int year = sc.nextInt();
+            
+            Exhibit e = new Exhibit(name, number, year);
+            hm.add(e);
+        }
+        hm.sortByName();
+        hm.print();
+        System.out.println();
+        hm.sortByYear();
+        hm.print();
+    }
+    
+}
