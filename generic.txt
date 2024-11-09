@@ -1,0 +1,63 @@
+package djen;
+public class Djen {
+
+    public static void main(String[] args) {
+        Integer []m1 = {1, 2, 3, 4, 5};
+        Mass<Integer> mi = new Mass<>(m1);
+        try {
+            System.out.println("\n" + mi.elemByInd(3));
+            mi.print();
+            mi.chast(2);
+        }
+        catch(ArrayIndexOutOfBoundsException e) {
+            System.out.println(e.getMessage());
+        }
+        Double []m2 = {1.1, 2.2, 3.3, 4.4, 5.5 };
+        Mass<Double> md = new Mass<>(m2);
+        try {
+            System.out.println("\n" + md.elemByInd(3));
+            md.print();
+            md.chast(2);
+        }
+        catch(ArrayIndexOutOfBoundsException e) {
+            System.out.println(e.getMessage());
+        }
+        String []m3 = {"123", "234", "345"};
+        Mass<String> ms = new Mass<>(m3);
+        try {
+            System.out.println("\n" + ms.elemByInd(2));
+            ms.print();
+            ms.chast(5);
+        }
+        catch(ArrayIndexOutOfBoundsException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+}
+
+package djen;
+
+class Mass<T> {
+    T []a;
+    Mass(T []a) {
+        this.a=a.clone();
+    }
+    void print() {
+        System.out.println("massive:");
+        for(int i=0; i < a.length; i++)
+            System.out.print(a[i] + " ");
+        System.out.println();
+    }
+    T elemByInd(int i) throws ArrayIndexOutOfBoundsException {
+        if (i < 0 || i > a.length)
+            throw new ArrayIndexOutOfBoundsException ("exit out of bounds!!!!!!!!!!!!!!😡😡😡😡😡😡😡");
+        return a[i];
+    }
+    void chast(int p) throws ArrayIndexOutOfBoundsException {
+        if (p < 0 || p > a.length)
+            throw new ArrayIndexOutOfBoundsException ("exit out of bounds!!!!!!!!!!!!!!😈👿🐫🐠🦐👀🛴");
+         for(int i=0; i <p; i++)
+            System.out.print(a[i] + " ");
+    }
+}
