@@ -1,0 +1,36 @@
+body {
+    background-image: url("https://wallpapers.com/images/hd/blue-girly-7u1o4yh2655ekxc9.jpg");
+    background-repeat: repeat;
+    background-size: 20%;
+}
+.swiper-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.swiper-slide {
+    width: 33%; 
+    border-radius: 5%;
+    overflow: hidden;
+}
+.swiper-slide img {
+    width: 100%; 
+    height: 450px;
+}
+.swiper-button-prev,
+.swiper-button-next {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5%;
+    cursor: pointer;
+}
+.pagination-text {
+    text-align: center;
+    color: black;
+}
+#reg {
+    object-fit:fill;
+}
