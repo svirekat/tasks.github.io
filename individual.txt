@@ -95,3 +95,103 @@ public class HistoricMuseum {
             System.out.println(a.get(i).toString());
     }
 }
+
+package exceptionsmy;
+import java.util.*;
+public class ExceptionsMy {
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("enter day: ");
+        int day = sc.nextInt();
+        System.out.print("enter month: ");
+        int month = sc.nextInt();
+        System.out.print("enter year: ");
+        int year = sc.nextInt();
+        try {
+            Data date = new Data(day, month, year);
+            System.out.println(date.numberfrombegin());
+            System.out.print("enter days to add: ");
+            int x = sc.nextInt();
+            Data date2 = date.plusdays(x);
+            date2.print();
+        }
+        catch(MyException e) {
+            System.out.println(e.getMessage() + " " + e.getDate());
+        } 
+    }
+}
+
+package exceptionsmy;
+public class MyException extends Exception{
+    String name;
+    int d, m, y;
+    MyException(String name, int d, int m, int y) {
+        super(name);
+        this.d=d;
+        this.m=m;
+        this.y=y;
+    }
+    String getDate() {
+        return d + "." + m + "." + y;
+    }
+}
+class Data {
+    int d, m, y;
+    Data(int d, int m, int y) throws MyException {
+        if (d > 31 || m > 12 || y < 0 || d < 0 || m < 0) {
+            throw new MyException("Error: Invalid date: ", d, m, y);
+        }
+        if (m == 2 && d == 29 && !isLeapYear(y)) {
+            throw new MyException("invalid data", d, m, y); 
+        }
+        this.d=d;
+        this.m=m;
+        this.y=y;
+    }
+    
+    private boolean isLeapYear(int year) {
+        return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
+    }
+    void print() {
+        System.out.println(d+"."+m+"."+y);
+    }
+    
+    int ms[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    Data plusdays(int d) throws MyException {
+        int d2 = this.d + d;
+        if (d2 <= ms[m-1]) {
+            return new Data(d2, m, y);
+        }
+        else {
+            int m2 = m, y2 = y;
+            int t = d2, sdvig=0;
+            while(t >= ms[m2-1]){
+                if (isLeapYear(y2) && m2+sdvig == 2)
+                    t -= 29;
+                else t -= ms[m2-1+sdvig];
+                sdvig++;
+                if (m2+sdvig > 12) {
+                    m2 = 1;
+                    sdvig = 0;
+                    y2++;
+                }
+            }
+            try {
+                return new Data(t, m2+sdvig, y2);
+            } catch (MyException e) {
+                System.err.println("Error: Invalid date: " + e.getDate());
+                return null; 
+            }
+        }
+    }
+    int numberfrombegin() {
+        if (isLeapYear(y)) ms[1] = 29;
+        int countd = 0;
+        for(int countm = 1; countm < m; countm++)
+            countd+=ms[countm-1];
+        countd += d;
+        ms[1] = 28;
+        return countd;
+    }  
+}
