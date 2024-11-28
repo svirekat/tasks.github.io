@@ -61,3 +61,60 @@ class Mass<T> {
             System.out.print(a[i] + " ");
     }
 }
+
+package mylinkedlist;
+
+public class MyLinkedList {
+
+    public static void main(String[] args) {
+        MyList l = new MyList();
+        l.createlist();
+        System.out.println("List: ");
+        l.print();
+        System.out.println();
+        System.out.println("List reversed: ");
+        l.print_reverse();
+        l.del("111");
+        System.out.println("List: ");
+        l.print();
+    }
+    
+}
+package mylinkedlist;
+import java.util.*;
+public class MyList {
+    LinkedList<String> list;
+    MyList() {
+        list = new LinkedList<String>();
+    }
+    void createlist() {
+        String s;
+        Scanner sc = new Scanner(System.in);
+        s = sc.nextLine();
+        while(!s.equals("")) {
+            list.addLast(s);
+            s = sc.nextLine();
+        }
+    }
+    
+    void print() {
+        ListIterator<String> it = list.listIterator();
+        while (it.hasNext()) {
+            System.out.println(it.next());
+        }
+    }
+    void print_reverse() {
+        ListIterator<String> it = list.listIterator(list.size());
+        while (it.hasPrevious()) {
+            System.out.println(it.previous());
+        }
+    }
+    
+    void del(String s) {
+        ListIterator<String> it = list.listIterator();
+        while (it.hasNext()) {
+            if (it.next().equals(s))
+                it.remove();
+        }
+    }
+}
