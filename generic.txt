@@ -117,4 +117,14 @@ public class MyList {
                 it.remove();
         }
     }
+    public boolean isSym() {
+        boolean flag = true;
+        ListIterator<String> it = list.listIterator();
+        ListIterator<String> it2 = list.listIterator(list.size());
+        while (it.hasNext() && it2.hasPrevious()) {
+            if (!it.next().equals(it2.previous()))
+                flag = false;
+        }
+        return flag;
+    }
 }
