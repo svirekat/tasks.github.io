@@ -200,3 +200,53 @@ public class MyList {
         return flag;
     }
 }
+
+
+package graf;
+import javax.swing.*;
+public class MyPanel extends JPanel{
+    JLabel l1, l2, l3;
+    JTextField f1, f2, f3;
+    MyPanel() {
+        l1 = new JLabel("first slagaemoe");
+        add(l1);
+        f1 = new JTextField();
+        f1.setColumns(10);
+        add(f1);
+        l2 = new JLabel("second slagaemoe");
+        add(l2);
+        f2 = new JTextField();
+        f2.setColumns(10);
+        add(f2);
+        l3 = new JLabel("third slagaemoe");
+        add(l3);
+        f3 = new JTextField();
+        f3.setColumns(10);
+        add(f3);
+        
+        button = new JButton("calculate");
+        MyListener m = new MyListener();
+        button.addActionListener(m);
+        add(button);
+    }
+}
+
+package graf;
+import javax.swing.*;
+public class MyFrame extends JFrame{
+    MyFrame() {
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        MyPanel panel = new MyPanel();
+        add(panel);
+        setVisible(true);
+    }
+}
+
+package graf;
+public class Graf {
+
+    public static void main(String[] args) {
+        MyFrame frame =  new MyFrame();
+    }
+}
