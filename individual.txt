@@ -1,68 +1,159 @@
-package individualka3;
+package individualka4;
 import java.util.*;
-public class Individualka3 {
+public class Individualka4 {
+
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        Scanner sc2 = new Scanner(System.in);
-        HistoricMuseum hm = new HistoricMuseum();
-        System.out.print("enter n: ");
-        int n = sc.nextInt();
-        for (int i = 0; i < n; i++)
-        {
-            System.out.print("enter name: ");
-            String name = sc2.nextLine();
-            System.out.print("enter number: ");
-            int number = sc.nextInt();
-            System.out.print("enter year: ");
-            int year = sc.nextInt();       
-            Exhibit e = new Exhibit(name, number, year);
-            hm.add(e);
-        }
-        hm.sortByName();
-        hm.print();
-        System.out.println();
-        hm.sortByYear();
-        hm.print();
-    }  
+        MyFrame frame =  new MyFrame();
+    }
 }
 
-package individualka3;
-import java.util.*;
-public class Exhibit {
-    private String name;
-    private int number, year;
-    Exhibit(String name, int number, int year) {
-        this.name = name;
-        this.number = number;
-        this.year = year;
+package individualka4;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+
+import javax.swing.*;
+public class MyPanel extends JPanel{
+    JLabel name, number, year, search;
+    JTextField tname, tnumber, tyear, searchname, index, delname;
+    JTextArea area;
+    JButton addButton, delButton, searchButton, sortNameButton, sortYearButton;
+    HistoricMuseum hm = new HistoricMuseum();
+    MyPanel() {
+        setLayout(new BorderLayout());
+        
+        JPanel Panel1 = new JPanel();
+        
+        name = new JLabel("Название");
+        Panel1.add(name);
+        tname = new JTextField();
+        tname.setColumns(14);
+        Panel1.add(tname);
+        
+        number = new JLabel("Номер");
+        Panel1.add(number);
+        tnumber = new JTextField();
+        tnumber.setColumns(5);
+        Panel1.add(tnumber);
+        
+        year = new JLabel("Год");
+        Panel1.add(year);
+        tyear = new JTextField();
+        tyear.setColumns(8);
+        Panel1.add(tyear);
+        
+        addButton = new JButton("Добавить экспонат");
+        addButton.addActionListener(e -> {
+            String s1 = tname.getText();
+            int s2 = Integer.parseInt(tnumber.getText());
+            int s3 = Integer.parseInt(tyear.getText());
+            Exhibit exh = new Exhibit(s1, s2, s3);
+            hm.add(exh);
+            tname.setText("");
+            tnumber.setText("");
+            tyear.setText("");
+        });
+        Panel1.add(addButton);
+        
+        add(Panel1, BorderLayout.NORTH);
+   
+        JPanel Panel2 = new JPanel();
+        delButton = new JButton("Удалить экспонат");
+        delButton.addActionListener(e -> {
+            String s1 = name.getText();
+            int ind = hm.search(s1);
+            if (ind > -1)  hm.delete(s1);
+            tname.setText("");
+            tnumber.setText("");
+            tyear.setText("");
+        });
+        Panel2.add(delButton);
+
+        delname = new JTextField();
+        delname.setColumns(10);
+        Panel2.add(delname);
+        add(Panel2);
+        
+        JPanel Panel3 = new JPanel();
+        
+        search = new JLabel("Поиск по названию:");
+        Panel3.add(search);
+        searchname = new JTextField();
+        searchname.setColumns(10);
+        Panel3.add(searchname);
+        
+        searchButton = new JButton("Найти экспонат");
+        searchButton.addActionListener(e -> {
+            String s1 = searchname.getText();
+            int ind = hm.search(s1);
+            if (ind > -1) index.setText(String.valueOf(ind+1));
+            else index.setText("Экспонат не найден");
+        });
+        Panel3.add(searchButton);
+        
+        index = new JTextField();
+        index.setColumns(10);
+        Panel3.add(index);
+        
+        add(Panel3, BorderLayout.CENTER);
+        
+        JPanel Panel4 = new JPanel();
+        area =  new JTextArea();
+        area.setRows(10);
+        area.setColumns(30);
+        area.setBackground(Color.pink);
+        Panel4.add(area);
+        
+        add(Panel4, BorderLayout.SOUTH);
+        
+        JPanel Panel5 = new JPanel();
+        sortNameButton = new JButton("Сортировать по имени");
+        sortNameButton.addActionListener(e -> {
+            hm.sortByName();
+            area.setText(hm.print());
+
+        });
+        Panel5.add(sortNameButton);
+        
+        sortYearButton = new JButton("Сортировать по году");
+        sortYearButton.addActionListener(e -> {
+            hm.sortByYear();
+            area.setText(hm.print());
+        });
+        Panel5.add(sortYearButton);   
+        
+        add(Panel5, BorderLayout.EAST);
     }
-    public String getName() {
-        return this.name;
-    }
-    public int getYear() {
-        return this.year;
-    }
-    public String toString() {
-        return "exhibit number " + number + ": " + name + " (" + year + ")";
-    }
-    public static Comparator<Exhibit> NameComparator = new Comparator<Exhibit>() {
-        public int compare(Exhibit e1, Exhibit e2){
-            return e1.getName().compareTo(e2.getName());
-        }
-    };
-    public static Comparator<Exhibit> YearComparator = new Comparator<Exhibit>() {
-        public int compare(Exhibit e1, Exhibit e2){
-            return e1.getYear()-e2.getYear();
-        }
-    };
+         
 }
 
-package individualka3;
+package individualka4;
+import javax.swing.*;
+import java.awt.BorderLayout;
+public class MyFrame extends JFrame{
+    MyFrame() {
+        setSize(700, 300);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        MyPanel panel = new MyPanel();
+        add(panel);
+        setVisible(true);
+    }
+}
+
+package individualka4;
 import java.util.*;
 public class HistoricMuseum {
     ArrayList<Exhibit> a;
     HistoricMuseum() {
         a = new ArrayList<Exhibit>();
+    }
+    public ArrayList<Exhibit> getA() {
+        return a;
     }
     //поиск
     int search(String name){
@@ -90,235 +181,43 @@ public class HistoricMuseum {
     public void sortByYear(){
         a.sort(Exhibit.YearComparator);
     }
-    public void print() {
-        for(int i = 0; i < a.size(); i++)
-            System.out.println(a.get(i).toString());
+    public String print() {
+        String s = "";
+        for(int i = 0; i < a.size(); i++) {
+            s += a.get(i).toString();
+            s += "\n";
+        }
+        return s;
     }
 }
 
-package exceptionsmy;
+package individualka4;
 import java.util.*;
-public class ExceptionsMy {
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        System.out.print("enter day: ");
-        int day = sc.nextInt();
-        System.out.print("enter month: ");
-        int month = sc.nextInt();
-        System.out.print("enter year: ");
-        int year = sc.nextInt();
-        try {
-            Data date = new Data(day, month, year);
-            System.out.println(date.numberfrombegin());
-            System.out.print("enter days to add: ");
-            int x = sc.nextInt();
-            Data date2 = date.plusdays(x);
-            date2.print();
+public class Exhibit {
+    private String name;
+    private int number, year;
+    Exhibit(String name, int number, int year) {
+        this.name = name;
+        this.number = number;
+        this.year = year;
+    }
+    public String getName() {
+        return this.name;
+    }
+    public int getYear() {
+        return this.year;
+    }
+    public String toString() {
+        return "экспонат №" + number + ": " + name + " (" + year + " г.)";
+    }
+    public static Comparator<Exhibit> NameComparator = new Comparator<Exhibit>() {
+        public int compare(Exhibit e1, Exhibit e2){
+            return e1.getName().compareTo(e2.getName());
         }
-        catch(MyException e) {
-            System.out.println(e.getMessage() + " " + e.getDate());
-        } 
-    }
-}
-
-package exceptionsmy;
-public class MyException extends Exception{
-    String name;
-    int d, m, y;
-    MyException(String name, int d, int m, int y) {
-        super(name);
-        this.d=d;
-        this.m=m;
-        this.y=y;
-    }
-    String getDate() {
-        return d + "." + m + "." + y;
-    }
-}
-class Data {
-    int d, m, y;
-    Data(int d, int m, int y) throws MyException {
-        if (d > 31 || m > 12 || y < 0 || d < 0 || m < 0) {
-            throw new MyException("Error: Invalid date: ", d, m, y);
+    };
+    public static Comparator<Exhibit> YearComparator = new Comparator<Exhibit>() {
+        public int compare(Exhibit e1, Exhibit e2){
+            return e1.getYear()-e2.getYear();
         }
-        if (m == 2 && d == 29 && !isLeapYear(y)) {
-            throw new MyException("invalid data", d, m, y); 
-        }
-        this.d=d;
-        this.m=m;
-        this.y=y;
-    }
-    
-    private boolean isLeapYear(int year) {
-        return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
-    }
-    void print() {
-        System.out.println(d+"."+m+"."+y);
-    }
-    
-    int ms[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    Data plusdays(int d) throws MyException {
-        int d2 = this.d + d;
-        if (d2 <= ms[m-1]) {
-            return new Data(d2, m, y);
-        }
-        else {
-            int m2 = m, y2 = y;
-            int t = d2, sdvig=0;
-            while(t >= ms[m2-1]){
-                if (isLeapYear(y2) && m2+sdvig == 2)
-                    t -= 29;
-                else t -= ms[m2-1+sdvig];
-                sdvig++;
-                if (m2+sdvig > 12) {
-                    m2 = 1;
-                    sdvig = 0;
-                    y2++;
-                }
-            }
-            try {
-                return new Data(t, m2+sdvig, y2);
-            } catch (MyException e) {
-                System.err.println("Error: Invalid date: " + e.getDate());
-                return null; 
-            }
-        }
-    }
-    int numberfrombegin() {
-        if (isLeapYear(y)) ms[1] = 29;
-        int countd = 0;
-        for(int countm = 1; countm < m; countm++)
-            countd+=ms[countm-1];
-        countd += d;
-        ms[1] = 28;
-        return countd;
-    }  
-}
-
-package listapplication;
-import java.util.*;
-public class ListApplication {
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        System.out.print("enter size of list: ");
-        int n = sc.nextInt();
-        List<Integer> list1 = new  List<>();
-        for(int i = 0; i < n; i++) {
-            System.out.print("enter data: ");
-            int d = sc.nextInt();
-            list1.add(d);
-        }
-        System.out.print("enter number of element: ");
-        int ntodel = sc.nextInt();
-        list1.remove(ntodel);
-        list1.print();
-    }
-    
-}
-package listapplication;
-
-public class ListItem <Item> {
-    private Item data;
-    private ListItem<Item> next;
-    private ListItem<Item> prev;
-    ListItem(Item d) {
-        data = d;
-        next = null;
-        prev = null;
-    }
-    ListItem(Item d, ListItem<Item> p) {
-        data = d;
-        prev = p;
-    }
-    public Item getdata() {
-        return data;
-    }
-    public void setdata(Item d) {
-        data = d;
-    }
-    public ListItem<Item> getnext() {
-        return next;
-    }
-    public ListItem<Item> getprev() {
-        return prev;
-    }
-    public void setprev(ListItem<Item> li) {
-        prev = li;
-    }
-    public void setnext(ListItem<Item> li) {
-        next = li;
-    }
-}
-package listapplication;
-
-public class List<Item> {
-    private int kol;
-    private ListItem<Item> first;
-    private ListItem<Item> last;
-    List() {
-        kol = 0;
-        first = null;
-        last = null;
-    }
-    List(Item data) {
-        first = last = new ListItem<Item>(data);
-        kol = 1;
-    }
-    public void add(Item data) {
-        ListItem<Item> li = new ListItem<Item>(data);
-        li.setnext(null);
-        if(kol > 0) {
-            li.setprev(last);
-            last.setnext(li);
-        }
-        else first = li;
-        last = li;
-        kol++;
-    }
-    public ListItem<Item> getfirst() {
-        return first;
-    }
-    public ListItem<Item> getlast() {
-        return last;
-    }
-    public int getquan() {
-        return kol;
-    }
-    public ListItem<Item> get(int i) {
-        if (i > kol) {
-            return null;
-        }
-        else {
-            ListItem<Item> li = first;
-            for (int j=1; j<i; j++) {
-                li = li.getnext();
-            }
-            return li;
-        }
-    }
-    void print() {
-        ListItem<Item> li = first;
-        while (li != null) {
-            System.out.print(li.getdata() + " ");
-            li = li.getnext();
-        }
-    }
-    public void remove(int i) {
-        if (i <= kol) {
-            ListItem<Item> li = get(i);
-            ListItem<Item> prev = li.getprev();
-            ListItem<Item> next = li.getnext();
-            if (prev != null) {
-                prev.setnext(next);
-            }
-            if (next != null) {
-                next.setprev(prev);
-                if (i == 1)
-                    first = next;
-            }
-            kol--;
-        }
-    }
+    };
 }
