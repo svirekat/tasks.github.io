@@ -1,120 +1,196 @@
-#include<iostream>
-#include<fstream>
-#include<windows.h>
+//server
+#include <winsock2.h>
+#include <iostream>
+#include <string>
+#include <thread>
+#include <mutex>
+#pragma comment (lib, "Ws2_32.lib")
+
 using namespace std;
-struct person {
-    char id[10];
-    double height;
-    double weight;
-}A;
-struct answer {
-    char a;
-    char id[10];
-}ans;
-int main() {
-    system("color F5");
-    setlocale(LC_ALL, "rus");
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    ifstream f_ANS;
-    ofstream f_REQ;
-    const char* nameA = "C:\\Users\\s0188117\\source\\repos\\Server\\x64\\Debug\\ANSWER.bin";
-    const char* nameR = "C:\\Users\\s0188117\\source\\repos\\Server\\x64\\Debug\\REQUEST.bin";
-    long pred_size;
-    int answer;
 
-    cout << "введите id" << endl;
-    cin >> A.id ;
-    while (true) {
-        cout << "введите запрос: рост вес" << endl;
-        cin >> A.height >> A.weight;
-        f_REQ.open(nameR, ios::app | ios::binary);
-        f_REQ.write((char*)&A, sizeof(A));
-        f_REQ.close();
+const int PORT = 666;
+const int BUFFER_SIZE = 1024;
 
-        f_ANS.open(nameA, ios::binary);
-        f_ANS.seekg(0, ios::end);
-        pred_size = f_ANS.tellg();
-        while (pred_size >= f_ANS.tellg())
-        {
-            Sleep(100);
-            f_ANS.seekg(0, ios::end);
-        }
-        f_ANS.seekg(pred_size, ios::beg);
-        
-        f_ANS.read((char*)&ans.id, sizeof(ans.id));
-        f_ANS.read((char*)&ans.a, sizeof(ans.a));
-        f_ANS.close();
-        bool ok = true;
-        for (int i = 0; i < 10; i++)
-            //if (ans.id[i] != A.id[i]) ok = false;
-            ok = ok and (ans.id[i] == A.id[i]);
+mutex mtx; // Mutex для синхронизации доступа к стандартному выводу
 
-        if (ok) {
-            if (ans.a == '0') {
-                cout << "ответ сервера: недостаток веса\n\n";
-            }
-            if (ans.a == '1') {
-                cout << "ответ сервера: норма веса\n\n";
-            }
-            if (ans.a == '2') {
-                cout << "ответ сервера: избыток веса\n\n";
-            }
-        }
-        else Sleep(100);
+// Функция для обработки клиента
+void handleClient(SOCKET client_socket) {
+    char buffer[BUFFER_SIZE];
+    int bytesReceived;
+
+    // Приветственное сообщение
+    const char* welcomeMessage = "Добро пожаловать!\n";
+    send(client_socket, welcomeMessage, strlen(welcomeMessage), 0);
+
+    while ((bytesReceived = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
+        buffer[bytesReceived] = '\0'; // Завершаем строку
+        mtx.lock();
+        cout << "Получено сообщение: " << buffer << endl; // Печатаем сообщение
+        mtx.unlock();
+
+        // Отправляем ответ обратно клиенту
+        send(client_socket, buffer, bytesReceived, 0);
     }
+
+    // Закрываем сокет клиента
+    closesocket(client_socket);
+    mtx.lock();
+    cout << "Клиент отключился." << endl;
+    mtx.unlock();
 }
 
-#include<iostream>
-#include<fstream>
-#include<windows.h>
+int main() {
+    setlocale(LC_ALL, "rus");
+    WSADATA wsaData;
+    SOCKET serverSocket, clientSocket;
+    sockaddr_in serverAddr, clientAddr;
+    int clientAddrSize = sizeof(clientAddr);
+
+    // Инициализация WSA
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        cerr << "WSAStartup failed: " << WSAGetLastError() << endl;
+        return 1;
+    }
+
+    // Создание сокета
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == INVALID_SOCKET) {
+        cerr << "Socket creation failed: " << WSAGetLastError() << endl;
+        WSACleanup();
+        return 1;
+    }
+
+    // Привязка сокета к адресу
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY; // Принимаем соединения со всех интерфейсов
+    serverAddr.sin_port = htons(PORT);
+
+    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        cerr << "Bind failed: " << WSAGetLastError() << endl;
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    // Начинаем слушать входящие соединения
+    if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
+        cerr << "Listen failed: " << WSAGetLastError() << endl;
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout << "Ожидание подключения клиентов..." << endl;
+
+    // Основной цикл сервера
+    while (true) {
+        // Принятие нового соединения
+        clientSocket = accept(serverSocket, (sockaddr*)&clientAddr, &clientAddrSize);
+        if (clientSocket == INVALID_SOCKET) {
+            cerr << "Accept failed: " << WSAGetLastError() << endl;
+            continue;
+        }
+
+        // Создание потока для обработки клиента
+        thread(handleClient, clientSocket).detach(); // Удаляем ненужное ключевое слово client_thread
+        mtx.lock();
+        cout << "Клиент подключён." << endl;
+        mtx.unlock();
+    }
+
+    // Закрываем серверный сокет и очищаем WSA
+    closesocket(serverSocket);
+    WSACleanup();
+    return 0;
+}
+
+
+//client
+#include <winsock2.h>
+#include <ws2tcpip.h> // Дополнительный заголовок для inet_pton
+#include <iostream>
+#include <string>
+#pragma comment (lib, "Ws2_32.lib")
+
 using namespace std;
-struct person {
-    char id[10];
-    double height;
-    double weight;
-}B;
-struct answer {
-    char a;
-    char id[10];
-};
-answer ans;
-long size_pred;
+
+const int PORT = 666;
+const char* SERVER_ADDR = "127.0.0.1";
+const int BUFFER_SIZE = 1024;
+void SetConsoleColor(int color) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, color);
+}
 
 int main() {
     setlocale(LC_ALL, "rus");
-    ifstream fR;
-    ofstream fA;
-    const char* nameR = "REQUEST.bin";
-    const char* nameA = "ANSWER.bin";
-    cout << "server is working" << endl;
+    WSADATA wsaData;
+    SOCKET clientSocket;
+    sockaddr_in serverAddr;
+    char buffer[BUFFER_SIZE];
 
-    fR.open(nameR, ios::binary);
-    fR.seekg(0, ios::end);
-    size_pred = fR.tellg();
-    fR.close();
-    while (true)
-    {
-        fR.open(nameR, ios::binary);
-        fR.seekg(0, ios::end);
-        while (size_pred >= fR.tellg())
-        {
-            Sleep(100);
-            fR.seekg(0, ios::end);
-        }
-        fR.seekg(size_pred, ios::beg);
-        fR.read((char*)&B, sizeof(B));
-        size_pred = fR.tellg();
-        fR.close();
-        double IMT = B.weight * 1.0 / (B.height * B.height * 0.01 * 0.01);
-        cout << "получил данные от " << B.id << "\n";
-        for (int i = 0; i < 10; i++)
-            ans.id[i] = B.id[i];
-        if (18.5 <= IMT && IMT < 25) ans.a = '1';
-        if (18.5 > IMT) ans.a = '0';
-        if (IMT >= 25) ans.a = '2';
-        fA.open(nameA, ios::binary | ios::app);
-        fA.write((char*)&ans.id, sizeof(ans.id));
-        fA.write((char*)&ans.a, sizeof(ans.a));
-        fA.close();
+    // Инициализация WSA
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        cerr << "WSAStartup failed: " << WSAGetLastError() << endl;
+        return 1;
     }
+
+    // Создание сокета
+    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocket == INVALID_SOCKET) {
+        cerr << "Socket creation failed: " << WSAGetLastError() << endl;
+        WSACleanup();
+        return 1;
+    }
+
+    // Настройка адреса сервера
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+
+    // Используем inet_pton для преобразования IP-адреса
+    if (inet_pton(AF_INET, SERVER_ADDR, &serverAddr.sin_addr) <= 0) {
+        cerr << "Invalid address: " << SERVER_ADDR << endl;
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    // Подключение к серверу
+    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) != 0) {
+        cerr << "Connection failed: " << WSAGetLastError() << endl;
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout << "Клиент подключился к серверу. Введите 'exit' для выхода.\n";
+
+    while (true) {
+        SetConsoleColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+        cout << "Введите сообщение: ";
+        string message;
+        getline(cin, message);
+        SetConsoleColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+        // Если клиент вводит "exit", завершаем работу
+        if (message == "exit") {
+            break;
+        }
+
+        // Отправка сообщения серверу
+        send(clientSocket, message.c_str(), message.length(), 0);
+
+        // Получение ответа от сервера
+        int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+        if (bytesReceived > 0) {
+            buffer[bytesReceived] = '\0'; // Завершаем строку
+            SetConsoleColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+            cout << "Сервер: " << buffer << endl;
+        }
+        SetConsoleColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    }
+
+    // Закрываем сокет и очищаем WSA
+    closesocket(clientSocket);
+    WSACleanup();
+    return 0;
 }
