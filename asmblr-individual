@@ -1,0 +1,71 @@
+//12. Дано натуральное число N.Если оно содержит хотя бы одну чётную цифру,
+//то вычислить произведение всех нечётных цифр, иначе - сумму всех цифр числа.
+#include <iostream>
+using namespace std;
+
+int main() {
+	setlocale(LC_ALL, "rus");
+	int N, N2, N3, sum = 0, pr = 1, flag = 0, d = 10, d2 = 2;
+	cin >> N;
+	N2 = N;
+	N3 = N;
+	_asm {
+
+	l:
+		MOV edx, 0;
+		MOV eax, N;
+		DIV d;
+		MOV N, eax;
+		MOV ebx, edx;
+		MOV eax, edx;
+		MOV edx, 0;
+		DIV d2;
+		CMP edx, 0;
+		JNE l1;
+		MOV flag, 1;
+	l1:
+		CMP N, 0;
+		JNE l;
+
+		MOV ecx, flag;
+		CMP ecx, 0;
+		JE l4;
+
+	l2:	MOV edx, 0;
+		MOV eax, N2;
+		MOV ecx, pr;
+		DIV d;
+		MOV N2, eax;
+		MOV ebx, edx;
+		MOV eax, edx;
+		MOV edx, 0;
+		DIV d2;
+		CMP edx, 0;
+		JE l2;
+		IMUL ecx, ebx;
+		MOV pr, ecx;
+		CMP N2, 0;
+		JNE l2;
+		JE l5;
+
+	l4:
+		MOV edx, 0;
+		MOV eax, N2;
+		DIV d;
+		ADD sum, edx;
+		MOV N2, eax;
+		CMP N2, 0;
+		JNE l4;
+	l5:
+		
+	}
+	N = N3;
+	if (flag) {
+		cout << N << " содержит чётную цифру" << endl;
+		cout << "произведение нечётных цифр:\n" << "pr = " << pr;
+	}
+	else {
+		cout << N << " не содержит чётных цифр" << endl;
+		cout << "сумма всех цифр:\n" << "sum = " << sum;
+	}
+}
