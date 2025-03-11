@@ -221,3 +221,24 @@ public class Exhibit {
         }
     };
 }
+
+#include <iostream>
+#include <omp.h>
+using namespace std;
+int main()
+{
+    setlocale(LC_ALL, "rus");
+    int s = 0, i, n;
+    #pragma omp parallel private(i, n) reduction(+:s)
+    {
+        n = omp_get_thread_num();
+        #pragma omp for
+        for (i = 1; i < 10; i++)
+        {
+            s = s + i;
+            cout << "нить " << n << " сложила элементы с номером " << i << endl;
+        }
+        cout << s << endl;
+    }
+    return 0;
+}
