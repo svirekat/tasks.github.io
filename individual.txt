@@ -242,3 +242,28 @@ int main()
     }
     return 0;
 }
+
+#include <iostream>
+#include <omp.h>
+using namespace std;
+int main()
+{
+    setlocale(LC_ALL, "rus");
+    omp_set_num_threads(4);
+    int i;
+    #pragma omp parallel private(i)
+    {
+        #pragma omp for schedule (static)
+        #pragma omp for schedule (staticб 1)
+        #pragma omp for schedule (staticб 2)
+        #pragma omp for schedule (dynamic)
+        #pragma omp for schedule (dynamic, 2)
+        #pragma omp for schedule (guided)
+        #pragma omp for schedule (guided, 2)
+        for (i = 1; i < 10; i++)
+        {
+            cout << "нить " << omp_get_thread_num() << " выполнила итерацию " << i << endl;
+        }
+    }
+    return 0;
+}
