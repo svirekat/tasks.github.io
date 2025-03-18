@@ -1,3 +1,29 @@
+//найти опр интеграл на отрезке а б произвольной функции используя формулу трапеций
+#include <omp.h>
+#include <iostream>
+using namespace std;
+int main()
+{
+    int i, n = 10000;
+    double sum = 0.0, x, h, rez, a, b;
+    cin >> a >> b;
+    h = double(b-a) / (double)n;
+    #pragma omp parallel private(x, i) shared(sum, n, h) num_threads(4)
+    {
+        double l_sum = 0.0;
+        #pragma omp for
+        for (i = 1; i <= n-1; i++) {
+            x = a + h *(double)i;
+            l_sum += 1/x;
+        }
+        #pragma omp atomic
+        sum += l_sum;
+    }
+
+    rez = (h / 2.0) * (1/a + 1/b +2*sum);
+    cout << rez << endl;
+}
+
 #include <iostream>
 using namespace std;
 int main()
