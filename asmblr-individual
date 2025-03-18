@@ -1,3 +1,27 @@
+#include <iostream>
+using namespace std;
+int main()
+{
+    int i, n = 10000;
+    double sum = 0.0, x, h, pi;
+    h = 1.0 / (double)n;
+    #pragma omp parallel private(x, i) shared(sum, n, h) num_threads(4)
+    {
+        double l_sum = 0.0;
+        #pragma omp for
+        for (i = 1; i <= n; i++) {
+            x = h * ((double)i - 0.5);
+            l_sum += 4.0 / (1.0 + x * x);
+        }
+        #pragma omp atomic
+        sum += l_sum;
+    }
+    pi = sum * h;
+    cout << pi << endl;
+}
+
+
+
 //12. Дано натуральное число N.Если оно содержит хотя бы одну чётную цифру,
 //то вычислить произведение всех нечётных цифр, иначе - сумму всех цифр числа.
 #include <iostream>
