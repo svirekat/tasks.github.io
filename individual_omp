@@ -1,0 +1,92 @@
+//12. Решить СЛАУ методом Якоби.
+#include <omp.h>
+#include <iostream>
+using namespace std;
+
+//проверка на отсутствие нулей на главной диагонали (необходимое условие для применения метода Якоби)
+bool isMatrixCorrect(double** A, int n) {
+    bool flag = true;
+    for (int j = 0; j < n; j++) 
+        if (A[j][j] == 0) flag = false;
+    return flag;
+}
+
+bool shortDistance(double* x0, double* x1, int n) {
+    double eps = 0.00001, sum_low = 0.0, sum_up = 0.0;
+    for (int j = 0; j < n; j++) {
+        sum_up += (x0[j] - x1[j]) * (x0[j] - x1[j]);
+        sum_low += x1[j] * x1[j];
+    }
+    return (sum_low == 0.0) || pow(sum_up/sum_low, 0.5) < eps;
+}
+int main()
+{
+    setlocale(LC_ALL, "rus");
+    int n, i;
+    cout << "введите размерность СЛАУ: ";
+    cin >> n;
+    double** A = new double* [n];
+    cout << "введите элементы матрицы А:\n";
+    for (int j = 0; j < n; j++) {
+        A[j] = new double[n];
+        for (int k = 0; k < n; k++)
+            cin >> A[j][k];
+    }
+    double* b = new double[n];
+    cout << "введите элементы столбца свободных членов:\n";
+    for (int j = 0; j < n; j++) {
+        cin >> b[j];
+    }
+
+    if (isMatrixCorrect(A, n)) {
+        int iters = 0, j;
+        double* x = new double[n];
+        double* x_new = new double[n];
+        for (int i = 0; i < n; i++)
+            x[i] = 1;
+
+        #pragma omp parallel private(j) shared(iters, x, x_new) num_threads(2)
+        {
+
+            double t1 = omp_get_wtime();
+            while (iters <= 2000) {
+
+                #pragma omp parallel for
+                for (j = 0; j < n; j++) {
+                    double S = 0;
+                    for (int k = 0; k < n; k++)
+                        if (j != k) S = S + A[j][k] * x[k];
+                    x_new[j] = b[j] / A[j][j] - S / A[j][j];
+                }
+                if (shortDistance(x, x_new, n))
+                    break;
+
+                #pragma omp parallel for
+                for (j = 0; j < n; j++) {
+                    x[j] = x_new[j];
+                }
+
+                iters++;
+            }
+            double t2 = omp_get_wtime();
+            cout << "time: " << t2 - t1 << endl;
+        }
+        if (iters <= 2000) {
+            cout << "Решение найдено за " << iters << " итераций:" << endl;
+            for (int j = 0; j < n; j++) {
+                cout << "x[" << j+1 << "] = " << x[j] << endl;
+            }
+        }
+        else cout << "метод расходится, попробуйте другое начальное приближение";
+        delete[] x;
+        delete[] x_new;
+    }
+    else cout << "на главной диагонали есть нулевой элемент! метод Якоби применить нельзя.";
+    for (int j = 0; j < n; j++)
+        delete[] A[j];
+    delete[] A;
+    delete[] b;
+    double t2 = omp_get_wtime();
+    
+    return 0;
+}
