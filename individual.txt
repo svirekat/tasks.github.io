@@ -1,3 +1,64 @@
+#include <iostream>
+#include <mpi.h>
+using namespace std;
+int main(int argc, char* argv[])
+{
+ int const n = 100;
+  int k, rank, world_size, ibeg, iend;
+ double ProSum = 0.0, TotalSum, startwtime = 0.0, endwtime;
+ MPI_Status status;
+
+ MPI_Init(&argc, &argv);
+ MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+ cout << "Process " << rank << " of " << world_size << " Started" << endl;
+
+ double x[n];
+ if (rank == 0)
+ {
+  for (int i = 0; i < n; i++)
+   x[i] = i;
+  startwtime = MPI_Wtime();
+ }
+ if (world_size > n)
+  world_size = n;
+
+ MPI_Bcast(x, n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+ k = n / world_size;
+ ibeg = k * rank;
+ iend = k * (rank + 1);
+ if (rank == world_size - 1)
+  iend = n;
+ for (int i = ibeg; i < iend; i++)
+  ProSum = ProSum + x[i];
+
+ if (rank == 0)
+ {
+  TotalSum = ProSum;
+  for (int i = 1; i < world_size; i++)
+  {
+   MPI_Recv(&ProSum, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+   endwtime = MPI_Wtime();
+   
+   cout << "Sum of process number " << i << " = " << ProSum << endl;
+   TotalSum += ProSum;
+
+  }
+ }
+ else
+  MPI_Send(&ProSum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+
+ if (rank == 0)
+ {
+  cout << "TotalSum = " << TotalSum << endl;
+  cout << "time is " << endwtime - startwtime << endl;
+ }
+ MPI_Finalize();
+ 
+}
+
 package individualka4;
 import java.util.*;
 public class Individualka4 {
