@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
+
+#define MAX_FILENAME_LEN 256
+
+// Функция для вычисления произведения отрицательных чисел в файле
+long long compute_negative_product(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 0;
+    }
+    
+    long long product = 1;
+    int number;
+    
+    while (fscanf(file, "%d", &number) == 1) {
+        if (number < 0) {
+            product *= number;
+        }
+    }
+    
+    fclose(file);
+    return product;
+}
+
+// Функция для создания имени выходного файла
+void create_output_filename(const char* input_filename, char* output_filename) {
+    snprintf(output_filename, MAX_FILENAME_LEN, "%sres", input_filename);
+}
+
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+    
+    int world_size, world_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    
+    // Проверяем, что количество процессов соответствует количеству файлов
+    if (argc < 2) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Usage: %s file1 file2 ... fileN\n", argv[0]);
+            fprintf(stderr, "Number of processes must match number of files\n");
+        }
+        MPI_Finalize();
+        return 1;
+    }
+    
+    int num_files = argc - 1;
+    if (world_size != num_files) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Number of processes (%d) must match number of files (%d)\n", 
+                    world_size, num_files);
+        }
+        MPI_Finalize();
+        return 1;
+    }
+    
+    // Каждый процесс обрабатывает свой файл
+    char* input_filename = argv[world_rank + 1];
+    long long product = compute_negative_product(input_filename);
+    
+    // Создаем имя выходного файла и записываем результат
+    char output_filename[MAX_FILENAME_LEN];
+    create_output_filename(input_filename, output_filename);
+    
+    FILE* output_file = fopen(output_filename, "w");
+    if (output_file == NULL) {
+        perror("Error opening output file");
+        MPI_Finalize();
+        return 1;
+    }
+    
+    fprintf(output_file, "%lld\n", product);
+    fclose(output_file);
+    
+    MPI_Finalize();
+    return 0;
+}
