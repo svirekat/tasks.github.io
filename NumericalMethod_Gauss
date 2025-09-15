@@ -1,0 +1,105 @@
+#include <iostream>
+#include <fstream>
+#include <windows.h>
+using namespace std;
+const double epsilon = 1e-16;       // малая величина
+
+int main() {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	setlocale(LC_ALL, "Russian");
+	int n;
+
+	//чтение данных из файла:
+	fstream file("f1.txt");
+	if (!file.is_open()) {
+		cerr << "Ошибка: не удалось открыть файл." << endl;
+		return 1;
+	}
+	file >> n;
+	double* b = new double[n];
+	double** A = new double* [n];
+	for (int i = 0; i < n; i++)
+	{
+		A[i] = new double[n];
+		for (int j = 0; j < n; j++)
+			file >> A[i][j];
+		file >> b[i];
+	}
+	file.close();
+
+	//вывод матрицы:
+	cout << "матрица A:" << endl;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++)
+			cout << A[i][j] << "\t";
+		cout << endl;
+	}
+	//вывод вектора:
+	cout << "вектор b:" << endl;
+	for (int j = 0; j < n; j++)
+		cout << b[j] << "\t";
+	cout << endl;
+
+	//прямой ход:
+	double t;
+	for (int k = 0; k < n - 1; k++) {
+		for (int i = k + 1; i < n; i++) {
+			t = A[i][k] / A[k][k];
+			b[i] -= t * b[k];
+			for (int j = k + 1; j < n; j++)
+				A[i][j] -= t * A[k][j];
+		}
+	}
+	double* x = new double[n];
+	if (fabs(A[n - 1][n - 1]) > epsilon) {
+		x[n - 1] = b[n - 1] / A[n - 1][n - 1];        //нахождение элемента x_n
+
+		// проверка на несовместность СЛАУ
+		bool ok = true;
+		for (int i = 0; i < n; i++) {
+			bool allZero = true;
+			for (int j = 0; j < n; j++) {
+				if (fabs(A[i][j]) > epsilon) {
+					allZero = false;
+					break;
+				}
+			}
+			if (allZero && fabs(b[i]) > epsilon)      //если в строке все нули, кроме b_i
+				ok = false;
+		}
+		if (ok) {
+			//обратный ход:
+			for (int k = n - 1; k >= 0; k--) {
+				double S = 0;
+				for (int j = k + 1; j < n; j++)
+					S += A[k][j] * x[j];
+				x[k] = (b[k] - S) / A[k][k];
+			}
+
+			SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+			cout << "Ответ:\n";
+			for (int j = 0; j < n - 1; j++)
+				cout << "x[" << j + 1 << "] = " << x[j] << ";\n";
+			cout << "x[" << n << "] = " << x[n - 1] << ".";
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+		}
+		else {
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
+			cout << "Система несовместна." << endl;
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+		}
+	}
+	else {
+		SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
+		cout << "Ошибка: деление на 0";
+		SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+	}
+
+	
+	//очистка динамической памяти
+	for (int i = 0; i < n; i++)
+		delete[] A[i];
+	delete[] A;
+	delete[] b;
+	delete[] x;
+}
