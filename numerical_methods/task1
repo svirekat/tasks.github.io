@@ -1,0 +1,208 @@
+//16.Решение СЛАУ любым методом вариационного типа (я выбрала метод минимальных невязок)
+
+#include <iostream>
+#include <fstream>
+#include <windows.h>
+#include <cmath>
+#include <clocale>
+using namespace std;
+const double epsilon = 1e-9;       // малая величина
+const int maximum = 2000;           //максимальное число итераций цикла
+
+double scalarProduct(double* a, double* b, int n) {       //скалярное произведение
+	double s = 0.0;
+	for (int i = 0; i < n; i++)
+		s += a[i] * b[i];
+	return s;
+}
+
+double** transpMatrix(double** M, int n) {
+	double** A = new double* [n];
+	for (int i = 0; i < n; i++) {
+		A[i] = new double[n];
+		for (int j = 0; j < n; j++)
+			A[i][j] = M[j][i];
+	}
+	return A;
+}
+
+double** matrixProduct(double** M1, double** M2, int n) {
+	double** res = new double* [n];
+	for (int i = 0; i < n; i++)
+		res[i] = new double[n];
+
+	for (int k = 0; k < n; k++) {
+		for (int i = 0; i < n; i++) {
+			res[i][k] = 0;
+			for (int j = 0; j < n; j++)
+				res[i][k] += M1[i][j] * M2[j][k];
+		}
+	}
+	return res;
+}
+
+double* product(double** M, double* v, int n) {    //произведение матрицы и вектора
+	double* res = new double[n];
+	for (int k = 0; k < n; k++) {
+		double el = 0;
+		for (int j = 0; j < n; j++)
+			el += M[k][j] * v[j];
+		res[k] = el;
+	}
+	return res;
+}
+
+double* minuss(double* v1, double* v2, int n) {         // разница векторов
+	double* res = new double[n];
+	for (int k = 0; k < n; k++) {
+		res[k] = v1[k] - v2[k];
+	}
+	return res;
+}
+
+double norma(double* v, int n) {   // норма (бесконечности)
+	double max = 0;
+	for (int i = 0; i < n; i++)
+		if (fabs(v[i]) > max)
+			max = fabs(v[i]);
+	return max;
+}
+
+double* prodNum(double d, double* v, int n) {    // умножение вектора на число
+	double* res = new double[n];
+	for (int i = 0; i < n; i++)
+		res[i] = v[i] * d;
+	return res;
+}
+
+int main() {
+	setlocale(LC_ALL, "rus");
+	int n;    //n - размерность СЛАУ
+	//чтение данных из файла:
+	fstream file("f1.txt");
+	if (!file.is_open()) {
+		cerr << "Ошибка: не удалось открыть файл." << endl;
+		return 1;
+	}
+	file >> n;
+	double* b = new double[n];
+	double** A = new double* [n];
+	for (int i = 0; i < n; i++)
+	{
+		A[i] = new double[n];
+		for (int j = 0; j < n; j++)
+			file >> A[i][j];
+		file >> b[i];
+	}
+	file.close();
+
+	//вывод матрицы:
+	cout << "матрица A:" << endl;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++)
+			cout << A[i][j] << "\t";
+		cout << endl;
+	}
+	//вывод вектора:
+	cout << "вектор b:\n";
+	for (int i = 0; i < n; i++)
+		cout << b[i] << "\n";
+	cout << endl;
+
+	double** oldA = A;
+	double* oldb = b;
+	double** A_t = transpMatrix(A, n);
+	A = matrixProduct(A_t, A, n);     //заменяем матрицу A на А^T * A
+	b = product(A_t, b, n);           //заменяем вектор b на А^T * b
+	delete[] oldb;
+	for (int i = 0; i < n; i++)
+		delete[] oldA[i];
+	delete[] oldA;
+
+	// и решаем СЛАУ A^T * A * x = A^T * b        с симметричной матрицей
+
+	double* x = new double[n];                //вектор х - искомое решение
+	for (int i = 0; i < n; i++) x[i] = 0.0;     // изначально х произвольный (здесь нулевой)
+
+	double* Ax = nullptr;                //вектор A*x
+	double* Ar = nullptr;				//вектор A*r
+	double* r = nullptr;				// r - невязка
+
+	double step;
+	double* stepr = nullptr;            // step * r 
+	double r_norm;
+	int counter = 0;
+
+	do {
+		if (Ar) delete[] Ar;
+		if (Ax) delete[] Ax;
+		if (r) delete[] r;
+		if (stepr) delete[] stepr;
+
+		Ax = product(A, x, n);
+		r = minuss(Ax, b, n);       // r = A*x-b
+		Ar = product(A, r, n);
+		r_norm = norma(r, n);
+
+		step = scalarProduct(Ar, r, n) / scalarProduct(Ar, Ar, n);
+		
+		double* stepr = prodNum(step, r, n);
+
+		double* x_new = minuss(x, stepr, n);        // обновление вектора х 
+		delete[] x;
+		x = x_new;
+		if (r_norm < epsilon)
+			break;
+		counter++;
+
+	} while (r_norm >= epsilon && counter < maximum);
+
+	if (counter == maximum) {
+		cout << "Решение не найдено =( \n";
+	}
+	else {
+		cout << "Норма невязки r = " << r_norm << endl;
+		cout << "Решение найдено за " << counter << " итераций\n\n";
+		for (int i = 0; i < n - 1; i++) {
+			cout.precision(16);
+			cout << "x[" << i + 1 << "] = " << x[i] << ";\n";
+		}
+		cout.precision(16);
+		cout << "x[" << n << "] = " << x[n - 1] << ".";
+	}
+
+	//удаление динамических массивов:
+	for (int i = 0; i < n; i++)
+		delete[] A[i];
+	delete[] A;
+	delete[] b;
+	delete[] A_t;
+	delete[] r;
+	delete[] x;
+	delete[] Ar;
+	delete[] Ax;
+	delete[] stepr;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3
+2 -3 1 -7
+1 4 2 -1
+1 -4 0 -5
