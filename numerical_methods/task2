@@ -1,0 +1,131 @@
+// 7. Сплайн-интерполяция
+
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+// метод Прогонки:
+double* progonka(double* a, double* b, double* c, double* d, int N) {
+	double* result = new double[N];
+
+	double* alpha = new double[N - 1];
+	double* beta = new double[N];
+
+	//прямой ход
+	alpha[0] = -c[1] / b[1];
+	beta[0] = d[1] / b[1];
+	double denom;
+	for (int i = 1; i <= N - 2; i++) {
+		denom = (a[i] * alpha[i - 1] + b[i]);
+		alpha[i] = -c[i] / denom;
+		beta[i] = (d[i] - a[i] * beta[i - 1]) / denom;
+	}
+	beta[N - 1] = (d[N - 1] - a[N - 1] * beta[N - 2]) / (a[N - 1] * alpha[N - 2] + b[N - 1]);
+
+	//обратный ход
+	result[N - 1] = beta[N - 1];
+	for (int i = N - 2; i >= 0; i--) {
+		result[i] = alpha[i] * result[i + 1] + beta[i];
+	}
+	return result;
+}
+
+double cub(double t) {
+	return t * t * t;
+}
+
+// форматирование числа: точка заменяется на запятую
+string format(double z) {
+	string s = to_string(z);
+	size_t pos = s.find(".");
+	if (pos != std::string::npos) // если запятая найдена
+	{
+		s.replace(pos, 1, ",");
+	}
+	return s;
+}
+
+
+int main() {
+	setlocale(LC_ALL, "rus");
+	double step = 0.01;       // шаг
+	
+	//чтение данных из файла:
+	fstream file1("file_read.txt");
+	if (!file1.is_open()) {
+		cerr << "Ошибка: не удалось открыть файл." << endl;
+		return 1;
+	}
+	int n;
+	file1 >> n;
+	double* x = new double[n];
+	double* y = new double[n];
+	for (int i = 0; i < n; i++) {
+		file1 >> x[i];
+		file1 >> y[i];
+	}
+	file1.close();
+
+	double* h = new double[n];     // h - расстояние между соседними узлами
+	for (int i = 1; i < n; i++) {
+		h[i] = x[i] - x[i - 1];
+	}
+
+
+	double* a = new double[n-1];
+	double* b = new double[n-1];
+	double* c = new double[n-1];
+	double* d = new double[n-1];
+	
+	// вычисление коэффициентов трёхдиагональной матрицы A
+	// a * q[i-1] + b * q[i] + c * q[i+1] = d, где q[i] = S"(x_i) (вторая производная)
+	for (int i = 1; i < n-1; i++)  
+	{      
+		a[i] = h[i];
+		b[i] = 2 * (h[i] + h[i + 1]);
+		c[i] = h[i + 1];
+		d[i] = 6 * ( ( (y[i + 1] - y[i]) / h[i + 1] ) - ( (y[i] - y[i - 1]) / h[i] ) );
+	}
+	double* ans = progonka(a, b, c, d, n-2);     // нахождение всех q[i] (кроме q[0] и q[n-1]) с помощью метода прогонки
+	double* q = new double[n];
+	q[0] = 0, q[n - 1] = 0;
+	for (int i = 1; i < n - 1; i++)
+		q[i] = ans[i - 1];
+
+	ofstream file2("file_write.txt");
+	if (!file2.is_open()) {
+		cerr << "Ошибка: не удалось открыть файл." << endl;
+		return 1;
+	}
+	int i = 1;
+	double x_ = x[0], x_end = x[n - 1];
+	while (x_ < x_end) {
+
+		if (x_ >= x[i]) {  // определяется отрезок, которому принадлежит x_
+			i++;
+		}
+		// Находим значение сплайна в текущей точке x_
+		double Spline = 
+			q[i - 1] * cub(x[i] - x_) / (6 * h[i])
+			+ q[i] * cub(x_ - x[i - 1]) / (6 * h[i])
+			+ (y[i - 1] / h[i] - q[i - 1] * h[i] / 6) * (x[i] - x_)
+			+ (y[i] / h[i] - q[i] * h[i] / 6) * (x_ - x[i - 1]);
+
+		// запись результатов в файл:
+		file2 << format(x_) << "\t" << format(Spline) << "\n";
+
+		x_ += step; // Переходим к следующей точке
+	}
+	file2.close();
+
+
+	delete[] a;
+	delete[] b;
+	delete[] c; 
+	delete[] d;
+	delete[] q;
+	delete[] x;
+	delete[] y;
+	delete[] h;
+}
