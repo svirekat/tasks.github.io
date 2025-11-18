@@ -5,29 +5,39 @@
 #include <string>
 using namespace std;
 
+const double epsilon = 1e-10;
+
 // метод Прогонки:
 double* progonka(double* a, double* b, double* c, double* d, int N) {
-	double* result = new double[N];
+	double* result = new double[N + 2];
 
-	double* alpha = new double[N - 1];
-	double* beta = new double[N];
+	double* alpha = new double[N + 1];
+	double* beta = new double[N + 1];
 
 	//прямой ход
-	alpha[0] = -c[1] / b[1];
-	beta[0] = d[1] / b[1];
+	alpha[1] = -c[1] / b[1];
+	beta[1] = d[1] / b[1];
 	double denom;
-	for (int i = 1; i <= N - 2; i++) {
-		denom = (a[i] * alpha[i - 1] + b[i]);
-		alpha[i] = -c[i] / denom;
-		beta[i] = (d[i] - a[i] * beta[i - 1]) / denom;
+	for (int k = 2; k <= N; k++) {
+		denom = a[k] * alpha[k - 1] + b[k];
+		if (abs(denom) <= epsilon) {
+			cerr << "ошибка: нулевой знаменатель в методе прогонки!" << endl;
+			return nullptr;
+		}
+		alpha[k] = -c[k] / denom;
+		beta[k] = (d[k] - a[k] * beta[k - 1]) / denom;
 	}
-	beta[N - 1] = (d[N - 1] - a[N - 1] * beta[N - 2]) / (a[N - 1] * alpha[N - 2] + b[N - 1]);
 
 	//обратный ход
-	result[N - 1] = beta[N - 1];
-	for (int i = N - 2; i >= 0; i--) {
-		result[i] = alpha[i] * result[i + 1] + beta[i];
+	result[N] = beta[N];
+	for (int k = N - 1; k > 0; k--) {
+		result[k] = alpha[k] * result[k + 1] + beta[k];
 	}
+	result[0] = 0;
+	result[N + 1] = 0;
+
+	delete[] alpha;
+	delete[] beta;
 	return result;
 }
 
@@ -52,9 +62,9 @@ int main() {
 	double step = 0.01;       // шаг
 	
 	//чтение данных из файла:
-	fstream file1("file_read.txt");
+	fstream file1("file_read2.txt");
 	if (!file1.is_open()) {
-		cerr << "Ошибка: не удалось открыть файл." << endl;
+		cerr << "ошибка: не удалось открыть файл." << endl;
 		return 1;
 	}
 	int n;
@@ -70,34 +80,42 @@ int main() {
 	double* h = new double[n];     // h - расстояние между соседними узлами
 	for (int i = 1; i < n; i++) {
 		h[i] = x[i] - x[i - 1];
+		if (h[i] <= 0) {
+			cerr << "ошибка: неупорядоченные или дублирующиеся точки x: h[" << i << "] = " << h[i] << endl;
+			return 1;
+		}
 	}
-
-
-	double* a = new double[n-1];
-	double* b = new double[n-1];
-	double* c = new double[n-1];
-	double* d = new double[n-1];
+	int nu = n - 2;   // nu - количество неизвестных q[i]
+	double* a = new double[n+1];
+	double* b = new double[n+1];
+	double* c = new double[n+1];
+	double* d = new double[n+1];
 	
 	// вычисление коэффициентов трёхдиагональной матрицы A
 	// a * q[i-1] + b * q[i] + c * q[i+1] = d, где q[i] = S"(x_i) (вторая производная)
 	for (int i = 1; i < n-1; i++)  
 	{      
-		a[i] = h[i];
-		b[i] = 2 * (h[i] + h[i + 1]);
-		c[i] = h[i + 1];
-		d[i] = 6 * ( ( (y[i + 1] - y[i]) / h[i + 1] ) - ( (y[i] - y[i - 1]) / h[i] ) );
+		if (i > 1) a[i] = h[i] / 6.0;
+		b[i] = (h[i] + h[i + 1]) / 3.0;
+		if (i < nu) c[i] = h[i + 1] / 6.0;
+		d[i] = ( (y[i + 1] - y[i]) / h[i + 1] ) - ( (y[i] - y[i - 1]) / h[i] );
 	}
-	double* ans = progonka(a, b, c, d, n-2);     // нахождение всех q[i] (кроме q[0] и q[n-1]) с помощью метода прогонки
-	double* q = new double[n];
-	q[0] = 0, q[n - 1] = 0;
-	for (int i = 1; i < n - 1; i++)
-		q[i] = ans[i - 1];
 
-	ofstream file2("file_write.txt");
+	double* q = progonka(a, b, c, d, nu);     // нахождение всех q[i] с помощью метода прогонки
+	if (!q) { 
+		cerr << "ошибка при решении системы методом прогонки." << endl;
+		delete[] a; delete[] b; delete[] c; delete[] d;
+		delete[] x; delete[] y; delete[] h;
+		return 1;
+	}
+
+	ofstream file2("file_write2.txt");
 	if (!file2.is_open()) {
 		cerr << "Ошибка: не удалось открыть файл." << endl;
 		return 1;
 	}
+
+
 	int i = 1;
 	double x_ = x[0], x_end = x[n - 1];
 	while (x_ < x_end) {
@@ -105,7 +123,7 @@ int main() {
 		if (x_ >= x[i]) {  // определяется отрезок, которому принадлежит x_
 			i++;
 		}
-		// Находим значение сплайна в текущей точке x_
+		// находим значение сплайна в текущей точке x_
 		double Spline = 
 			q[i - 1] * cub(x[i] - x_) / (6 * h[i])
 			+ q[i] * cub(x_ - x[i - 1]) / (6 * h[i])
@@ -119,11 +137,8 @@ int main() {
 	}
 	file2.close();
 
+	cout << "программа успешно завершена!";
 
-	delete[] a;
-	delete[] b;
-	delete[] c; 
-	delete[] d;
 	delete[] q;
 	delete[] x;
 	delete[] y;
