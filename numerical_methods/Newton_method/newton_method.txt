@@ -1,0 +1,100 @@
+// Найти все корни уравнения f(x) = 0 на отрезке [a;b]. 
+// 4.Метод Ньютона (канонический)
+
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+#include <vector>
+using namespace std;
+
+const double h = 1e-7;
+const int MAX = 200;
+const double epsilon = 1e-6;
+
+string str_f = "sin(x) - 1";
+
+double f(double x) {
+	return sin(x) - 1;
+}
+// нахождение 1-ой производной (численно)
+double f_pr(double x) {
+	return (f(x + h) - f(x - h)) / (2.0 * h);
+}
+
+double NewtonMethod(double initial, double A, double B) {
+	double x_k = initial;
+	double x_k_plus1 = initial;
+	int n = 0;
+
+	while (n < MAX) {
+		double f_x_k = f(x_k);
+		double df_x_k = f_pr(x_k);
+
+		if (abs(df_x_k) < 1e-12) {  // если производная близка к 0
+			return NAN; 
+		}
+
+		x_k_plus1 = x_k - (f_x_k / df_x_k);   // формула Ньютона
+
+		if (abs(x_k_plus1 - x_k) < epsilon || abs(f(x_k_plus1)) < epsilon) {
+			if (x_k_plus1 >= A - epsilon && x_k_plus1 <= B + epsilon) {
+				return x_k_plus1;
+			}
+			else {
+				return NAN;
+			}
+		}
+		x_k = x_k_plus1;
+		n++;
+	}
+	return NAN;
+}
+
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+
+	double A, B;
+	cout << "введите границы отрезка A, B:\n";
+	cin >> A >> B;
+	if (A >= B) {
+		cout << "неккорректный отрезок!\n";
+		return 0;
+	}
+	cout << "поиск решения уравнения " << str_f << " = 0 на отрезке [" << A << "; " << B << "]\n...\n";
+
+	vector<double> roots;
+	double step = 0.01;
+
+	if (abs(f(A)) < epsilon) {
+		roots.push_back(A);
+	}
+
+	for (double j = A; j < B; j += step) {
+		double x_start = j;
+		double x_end = min(j + step, B);
+
+		if (f(x_start) * f(x_end) < 0) {   //если функция имеет разные знаки на концах интервала
+			double root = NewtonMethod((x_start + x_end) / 2.0, x_start, x_end);
+			if (!isnan(root))
+				roots.push_back(root);
+		}
+		else if (abs(f(x_end)) < epsilon && x_end <= B + epsilon) {
+			roots.push_back(x_end);
+		}
+	}
+
+	if (roots.empty()) {
+		cout << "на заданном отрезке корни не найдены\n";
+	}
+	else {
+		cout << "\nнайденные корни:\n";
+		int k = 1;
+		for (double ans : roots) {
+			cout << "x[" << k << "] = " << fixed << setprecision(10) << ans << "\n";
+			k++;
+		}
+	}
+
+	return 0;
+}
