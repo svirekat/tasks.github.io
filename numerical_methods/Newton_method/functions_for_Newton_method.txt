@@ -1,0 +1,8 @@
+"x^9 - 4x^7 + x^5 - x^4 - 3x"
+pow(x, 9) - 4 * pow(x, 7) + pow(x, 5) - pow(x, 4) -3 * x
+
+"x^5 - 4x +1"
+pow(x, 5) - 4 * x + 1
+
+"(ln(5x))^2 - e^x + x"
+pow(log(5*x), 2) - exp(x) + x
