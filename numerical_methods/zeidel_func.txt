@@ -1,0 +1,31 @@
+x=1-0.1y+0.1z
+y=(7/6)-(1/12)y-(1/12)*z^{2}
+z\ =\ 1-(1/15)x^{3}+(1/15)y
+
+double fi_1(double x1, double x2, double x3) {
+	return 1 - 0.1 * x2 + 0.1 * x3;
+}
+double fi_2(double x1, double x2, double x3) {
+	return (7 / 6) - (1 / 12) * x1 - (1 / 12) * pow(x3, 2);
+}
+double fi_3(double x1, double x2, double x3) {
+	return 1 - (1 / 15) * pow(x1, 3) + (1 / 15) * x2;
+}
+
+
+
+x=\frac{39.61+\sin y-0.4\exp(-z)}{20}
+y=\frac{12.58+2\cos(x)+0.5z}{25}
+z\ =\frac{42.15+x+1.2\sqrt{y}}{30}
+
+double fi_1(double x1, double x2, double x3) {
+	return (39.61 + sin(x2) - 0.4 * exp(-x3)) / 20.0;
+}
+
+double fi_2(double x1, double x2, double x3) {
+	return (12.5822936 + 2.0 * cos(x1) + 0.5 * x3) / 25.0;
+}
+
+double fi_3(double x1, double x2, double x3) {
+	return (42.15 + x1 + 1.2 * sqrt(x2)) / 30.0;
+}
