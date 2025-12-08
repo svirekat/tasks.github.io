@@ -1,0 +1,88 @@
+#include <iostream>
+using namespace std;
+
+const double epsilon = 1e-9;
+const int MAX_ITERATIONS = 30000;
+const double M = 1e24;
+
+double max(double a, double b, double c) {
+	if (a > b) {
+		if (a > c) return a;
+		return c;
+	}
+	if (b > c) return b;
+	return c;
+}
+
+double fi_1(double x1, double x2, double x3) {
+	return (39.61 + sin(x2) - 0.4 * exp(-x3)) / 20.0;
+}
+
+double fi_2(double x1, double x2, double x3) {
+	return (12.58 + 2.0 * cos(x1) + 0.5 * x3) / 25.0;
+}
+
+double fi_3(double x1, double x2, double x3) {
+	return (42.15 + x1 + 1.2 * sqrt(x2)) / 30.0;
+}
+
+
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+	double x[3];
+	cout << "введите начальное приближение:\n";
+	cout << "x1 = ";
+	cin >> x[0];
+	cout << "x2 = ";
+	cin >> x[1];
+	cout << "x3 = ";
+	cin >> x[2];
+	int k = 0;
+	double x_new[3] = {x[0], x[1], x[2]};
+	bool ok = false;   // ок - решение найдено
+	bool rashod = false;
+	double maxDif;
+	
+
+	do {
+		x_new[0] = fi_1(x[0], x[1], x[2]);
+		x_new[1] = fi_2(x_new[0], x[1], x[2]);
+		x_new[2] = fi_3(x_new[0], x_new[1], x[2]);
+
+		ok = (abs(fi_1(x_new[0], x_new[1], x_new[2]) - x_new[0]) < epsilon) &&
+			(abs(fi_2(x_new[0], x_new[1], x_new[2]) - x_new[1]) < epsilon) &&
+			(abs(fi_3(x_new[0], x_new[1], x_new[2]) - x_new[2]) < epsilon);
+		maxDif = max(abs(x_new[0] - x[0]), abs(x_new[1] - x[1]), abs(x_new[2] - x[2]));
+
+		if (x_new[0] > M || x_new[1] > M || x_new[2] > M) {
+			rashod = true;
+			break;
+		}
+		// обновление приближения
+		x[0] = x_new[0];
+		x[1] = x_new[1];
+		x[2] = x_new[2];
+		k++;
+
+		if (k >= MAX_ITERATIONS) break;
+	} while (!ok && maxDif >= epsilon);
+
+	if (k >= MAX_ITERATIONS) {
+		cout << "решение не найдено за " << MAX_ITERATIONS << " итераций\n";
+	}
+	else {
+		if (rashod) {
+			cout << "метод Зейделя расходится для данного начального приближения";
+		}
+		else {
+			cout << "решение найдено за " << k << " итераций\n";
+			cout << "x1 = " << x_new[0] << "\n";
+			cout << "x2 = " << x_new[1] << "\n";
+			cout << "x3 = " << x_new[2] << "\n";
+		}
+	}
+	return 0;
+}
+
+https://www.desmos.com/3d/0ly2dbs9of
