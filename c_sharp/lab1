@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Lab_1
+{
+    public class Triangle
+    {
+        public int a, b, c;
+
+        public Triangle(int a, int b, int c)
+        {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+
+        public Point A, B, C;
+        public Triangle(Point A, Point B, Point C)
+        {
+            this.A = A;
+            this.B = B;
+            this.C = C;
+        }
+
+        public int p()
+        {
+            return a + b + c;
+        }
+
+        public double s()
+        {
+            double pp = p() / 2;
+            return Math.Sqrt(pp * (pp - a) * (pp - b) * (pp - c));
+        }
+
+        public double p_points()
+        {
+            return A.distance(B) + B.distance(C) + C.distance(A);
+        }
+
+        public double s_points()
+        {
+            double pp = p_points() / 2;
+            double a = A.distance(B);
+            double b = B.distance(C);
+            double c = C.distance(A);
+            return Math.Sqrt(pp * (pp - a) * (pp - b) * (pp - c));
+        }
+
+    }
+
+    public class Point
+    {
+        public int x, y;
+        public Point(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public void printPoint()
+        {
+            Console.WriteLine(x + ", " + y);
+        }
+
+        public double distance(Point p2)
+        {
+            return Math.Sqrt(Math.Pow(x - p2.X, 2) + Math.Pow(y - p2.Y, 2));
+        }
+        public int X { get { return x; } set { x = value; } }
+        public int Y { get { return y; } set { y = value; } }
+    }
+
+    internal class My
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("input A, B, C");
+            Point A = new Point (Convert.ToInt32(Console.ReadLine()), Convert.ToInt32(Console.ReadLine()));
+            Point B = new Point(Convert.ToInt32(Console.ReadLine()), Convert.ToInt32(Console.ReadLine()));
+            Point C = new Point(Convert.ToInt32(Console.ReadLine()), Convert.ToInt32(Console.ReadLine()));
+            Triangle t = new Triangle(A, B, C);
+            Console.WriteLine("p=" + t.p_points());
+            Console.WriteLine("s=" + t.s_points());
+
+            Console.WriteLine("input x, y");
+            int x = Convert.ToInt32(Console.ReadLine());
+            int y = Convert.ToInt32(Console.ReadLine());
+            Point p1 = new Point(x, y);
+            Console.WriteLine("input x, y");
+            x = Convert.ToInt32(Console.ReadLine());
+            y = Convert.ToInt32(Console.ReadLine());
+            Point p2 = new Point(x, y);
+
+            p1.printPoint();
+            p2.printPoint();
+            Console.WriteLine("distance = " + p1.distance(p2));
+        }
+    }
+}
