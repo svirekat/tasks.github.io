@@ -1,0 +1,127 @@
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+const double delta = 1e-9;
+const double epsilon = 1e-8;
+const int MAXIMUM = 1000;
+
+double norma(double* v, int n) {
+	double mx = fabs(v[0]);
+	for (int i = 0; i < n; i++)
+		if (fabs(v[i]) > mx)
+			mx = fabs(v[i]);
+	return mx;
+}
+
+double* prod_num(double a, double* v, int n) {
+	double* ans = new double[n];
+	for (int i = 0; i < n; i++)
+		ans[i] = v[i] * a;
+	return ans;
+}
+
+double* prod_matr(double** M, double* v, int n) {
+	double* ans = new double[n];
+	for (int i = 0; i < n; i++) {
+		double s = 0;
+		for (int j = 0; j < n; j++) 
+			s += M[i][j] * v[j];
+		ans[i] = s;
+	}
+	return ans;
+}
+
+void print_vector(double* v, int n) {
+	for (int i = 0; i < n; i++) {
+		cout << v[i] << endl;
+	}
+	cout << endl;
+}
+
+void print_matrix(double** M, int n) {
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++)
+			cout << M[i][j] << "\t";
+		cout << endl;
+	}
+}
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+
+	fstream f("file3.txt");
+	if (!f.is_open()) {
+		cerr << "ошибка: не удалось открыть файл.\n";
+		return 1;
+	}
+	
+	int n;
+	f >> n;
+	double** A = new double* [n];
+	for (int i = 0; i < n; i++) {
+		A[i] = new double[n];
+		for (int j = 0; j < n; j++) {
+			f >> A[i][j];
+		}
+	}
+	f.close();
+
+	// ПМ алгоритм
+	double* y = new double[n];
+	for (int i = 0; i < n; i++)
+		y[i] = 1;
+
+	double y_norm = norma(y, n);
+	double* x = prod_num(1 / y_norm, y, n);
+
+	int counter = 1;
+	double lambda = 0;
+	double* y_new = new double[n];
+	double* x_new = new double[n];
+	double lambda_new;
+
+	do {
+		y_new = prod_matr(A, x, n);
+		x_new = prod_num(1 / norma(y_new, n), y_new, n);
+		
+		bool ok = false;
+		for (int i = 1; i < n; i++) {
+			if (abs(x[i]) > delta) {
+				lambda_new = y_new[i] / x[i];
+				ok = true;
+				break;
+			}
+		}
+		if (!ok) {
+			cerr << "ошибка: у - нулевой вектор.\n";
+			return 2;
+		}
+		if (fabs(lambda - lambda_new) <= epsilon) {
+			break;
+		}
+		x = x_new;
+		y = y_new;
+		lambda = lambda_new;
+
+		counter++;
+	} while (counter < MAXIMUM);
+	if (counter == MAXIMUM) {
+		cout << "достигнуто максимальное число итераций, решение не найдено.";
+		return 3;
+	}
+	cout << "наибольшее по модулю собственное значение матрицы\n";
+	print_matrix(A, n);
+	cout << "\nlambda = " << lambda_new << "\n";
+	cout << "\nсобственный вектор х:\n";
+	print_vector(x_new, n);
+
+	delete x;
+	delete y;
+	delete x_new;
+	delete y_new;
+	for (int i = 0; i < n; i++) 
+		delete A[i];
+	delete[] A;
+	return 0;
+}
