@@ -1,0 +1,152 @@
+using System;
+
+namespace ExtendsAvto
+{
+    class Avto
+    {
+        private string marka;
+        private string number;
+        private string vin;
+        private int year;
+        private double vol;
+        private int price;
+        private int km;
+
+        public Avto(string marka, string number, string vin, int year, double vol, int price, int km)
+        {
+            this.marka = marka;
+            this.number = number;
+            this.vin = vin;
+            this.year = year;
+            this.vol = vol;
+            this.price = price;
+            this.km = km;
+        }
+
+        public override string ToString()
+        {
+            return $"Марка: {marka}\nНомер: {number}\nВин: {vin}\nГод: {year}\n" +
+                $"Объем: двигателя: {vol}\nЦена: {price}\nПробег: {km}";
+        }
+
+        public string Marka
+        {
+            get { return marka; }
+            set { marka = value; }
+        }
+        public string Number
+        {
+            get { return number; }
+            set { number = value; }
+        }
+        public string Vin
+        {
+            get { return vin; }
+            set { vin = value; }
+        }
+        public int Year
+        {
+            get { return year; }
+            set { year = value; }
+        }
+        public int Price
+        {
+            get { return price; }
+            set { price = value; }
+        }
+        public double Vol
+        {
+            get { return vol; }
+            set { vol = value; }
+        }
+        public int Km
+        {
+            get { return km; }
+            set { km = value; }
+        }
+    }
+
+    class Taxi : Avto
+    {
+        private string driver;
+        private int pricekm;
+
+        public Taxi(string marka, string number, string vin, 
+            int year, double vol, int price, int km, string driver, int pricekm) 
+            : base(marka, number, vin, year, vol, price, km)
+        {
+            this.driver = driver;
+            this.pricekm = pricekm;
+        }
+
+        public double Stoim(double km)
+        {
+            return km * pricekm;
+        }
+
+        public string Driver
+        {
+            get { return driver; }
+            set { driver = value; }
+        }
+        public int Pricekm
+        {
+            get { return pricekm; }
+            set { pricekm = value; }
+        }
+        public override string ToString()
+        {
+            return base.ToString() + $"\nВодитель: {driver}\nЦена за км: {pricekm}";
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Введите данные для авто");
+            Console.WriteLine("Введите марку");
+            string marka = Console.ReadLine();
+
+            Console.WriteLine("Введите номер");
+            string number = Console.ReadLine();
+
+            Console.WriteLine("Введите вин");
+            string vin = Console.ReadLine();
+
+            Console.WriteLine("Введите год выпуска:");
+            int year = int.Parse(Console.ReadLine());
+
+            Console.WriteLine("Введите объем двигателя");
+            double vol = double.Parse(Console.ReadLine());
+
+            Console.WriteLine("Введите цену:");
+            int price = int.Parse(Console.ReadLine());
+
+            Console.WriteLine("Введите пробег:");
+            int km = int.Parse(Console.ReadLine());
+
+            Avto a = new Avto(marka, number, vin, year, vol, price, km);
+            Console.WriteLine("\nДанные авто:");
+            Console.WriteLine(a.ToString());
+
+            Console.WriteLine("Введите ФИО водителя:");
+            string driver = Console.ReadLine();
+
+            Console.WriteLine("Введите стоимость за км:");
+            int pricekm = int.Parse(Console.ReadLine());
+
+            Taxi t = new Taxi(marka, number, vin, year, vol, price, km, driver, pricekm);
+
+            Console.WriteLine("\nВведите дальность расстояния в км:");
+            double km1 = double.Parse(Console.ReadLine());
+
+            Console.WriteLine($"Стоимость поездки: {t.Stoim(km1)}");
+            Console.WriteLine("\nДанные такси:");
+            Console.WriteLine(t.ToString());
+
+            Console.WriteLine("\nНажмите на любую клавишу для выхода...");
+            Console.ReadKey();
+        }
+    }
+}
