@@ -1,0 +1,124 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <iomanip> 
+#include <fstream>
+using namespace std;
+
+double const epsilon = 1e-9;
+const string file1 = "results5.csv";
+const string file2 = "results6.csv";
+
+double ODU_function(double t, double y) {   // правая часть ОДУ
+	// return -y;
+	// return t-y; 
+	 return exp(-sin(t)) - y * cos(t);
+}
+
+double exactSolution(double t) {
+	// return exp(-t);
+	// return 2 / exp(t) + t - 1;
+	 return (1 + t) * exp(-sin(t));
+}
+
+double methodRungeKutta(
+	double t, double y, double h, double (*f)(double, double)
+) 
+{
+	double k1 = f(t, y);
+	double k2 = f(t + h, y + h * k1);
+	return y + h * (k1 + k2) / 2.0;
+}
+
+vector<pair<double, double> > methodAdamsa(
+	double t0, double y0, double tf, double h, double (*f)(double, double)
+)
+{
+	vector< pair<double, double> > solution;
+	solution.push_back({ t0, y0 });
+
+	double t_n_minus_1 = t0;
+	double y_n_minus_1 = y0;
+	double f_n_minus_1 = f(t_n_minus_1, y_n_minus_1);
+
+	double t_next = t_n_minus_1 + h;
+	double y_next = methodRungeKutta(t_n_minus_1, y_n_minus_1, h, f);
+	solution.push_back({ t_next, y_next });
+
+	double f_n_minus_2 = f_n_minus_1;
+
+	t_n_minus_1 = t_next; 
+	y_n_minus_1 = y_next; 
+	f_n_minus_1 = f(t_n_minus_1, y_n_minus_1);
+
+	while (t_n_minus_1 < tf - epsilon) {
+		if (t_n_minus_1 + h > tf)
+			h = tf - t_n_minus_1;
+
+		// формула Адамса:
+		y_next = y_n_minus_1 + h * (1.5 * f_n_minus_1 - 0.5 * f_n_minus_2);
+		t_next = t_n_minus_1 + h;
+
+		solution.push_back({ t_next, y_next });
+
+		f_n_minus_2 = f_n_minus_1;
+		f_n_minus_1 = f(t_next, y_next);
+
+		y_n_minus_1 = y_next;
+		t_n_minus_1 = t_next;
+	}
+	return solution;
+}
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+	double t0 = 0.0;     
+	double y0 = 1.0;     // y(0) = 1
+	double tf = 5.0;     
+	double h = 0.1;      
+
+	vector< pair< double, double> > solution = methodAdamsa(t0, y0, tf, h, ODU_function);
+
+	ofstream outFile(file1);
+	if (outFile.is_open()) {
+		outFile.imbue(std::locale("Russian"));
+		outFile << "t;y_numerical;y_exact;abs_error\n";
+		for (const auto& point : solution) {
+			double exact_y = exactSolution(point.first);
+			double abs_error = fabs(point.second - exact_y);
+			outFile << fixed << setprecision(6)
+				<< point.first << ";"
+				<< point.second << ";"
+				<< exact_y << ";"
+				<< abs_error << "\n";
+		}
+		outFile.close();
+	}
+	else {
+		cerr << "ошибка: не удалось создать файл!\n";
+	}
+
+	h = 0.05;
+	solution = methodAdamsa(t0, y0, tf, h, ODU_function);
+	ofstream outFile2(file2);
+	if (outFile2.is_open()) {
+		outFile2.imbue(std::locale("Russian"));
+		outFile2 << "t;y_numerical;y_exact;abs_error\n";
+		for (const auto& point : solution) {
+			double exact_y = exactSolution(point.first);
+			double abs_error = fabs(point.second - exact_y);
+			outFile2 << fixed << setprecision(6)
+				<< point.first << ";"
+				<< point.second << ";"
+				<< exact_y << ";"
+				<< abs_error << "\n";
+		}
+		outFile2.close();
+	}
+	else {
+		cerr << "ошибка: не удалось создать файл!\n";
+	}
+
+	cout << "Программа успешно завершена!\n";
+	return 0;
+}
