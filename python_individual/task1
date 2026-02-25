@@ -1,0 +1,23 @@
+### Разбить текст на предложения. Для каждого предложения определить:
+### - Количество слов
+### - Самое длинное слово
+### - Наличие вопросительных/восклицательных знаков
+### Вывести предложения в порядке убывания количества слов.
+
+text = "Привет, как у тебя дела? Хорошо, спасибо. А у тебя? Отлично!"
+sentences = []
+cur_sentence = []
+for ch in text:
+    cur_sentence.append(ch)
+    if ch in ".?!":
+        sentences.append(''.join(cur_sentence).strip())
+        cur_sentence = []
+
+result = []
+for s in sentences:
+    words = [''.join(ch for ch in w if ch.isalpha()) for w in s.split()]
+    longest_word = max(words, key=len)
+    result.append((s, len(words), longest_word, s[-1]))
+result.sort(key = lambda x: x[1], reverse=True)
+for (sentence, count, longest, end) in result:
+    print(sentence + " (" + str(count) + " words, " + longest + ", " + end + ")")
