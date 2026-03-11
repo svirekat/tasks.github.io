@@ -1,0 +1,214 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import sys
+import math
+
+def safe_float_convert(value):
+    if isinstance(value, str):
+        value = value.replace(',', '.')
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+# точные функции для примера 1
+def exact_solution1_1(t):
+    return math.exp(t) + 2*math.exp(2*t) - math.exp(t)*math.log(math.exp(2*t) + 1) + 2*math.exp(2*t)*math.atan(math.exp(t)) 
+def exact_solution1_2(t):
+    return math.exp(t) + 3*math.exp(2*t) - math.exp(t)*math.log(math.exp(2*t) + 1) + 3*math.exp(2*t)*math.atan(math.exp(t)) 
+
+# точные функции для примера 2
+def exact_solution2_1(t):
+    return 1 + math.exp(2*t) + math.exp(-t)
+def exact_solution2_2(t):
+    return math.exp(t) - 3*math.exp(-t)
+def exact_solution2_3(t):
+    return math.exp(t) + math.exp(2*t) - 5*math.exp(-t)
+
+# точные функции для примера 3
+def exact_solution3_1(t):
+    return -t*t
+def exact_solution3_2(t):
+    return t
+
+# точные функции для примера 4
+def exact_solution4_1(t):
+    return math.exp(t*t) 
+def exact_solution4_2(t):
+    return 0.5 * math.exp(-t*t)
+
+
+def get_exact_solution(t, eq_number, ex_number):
+    if ex_number == 1:
+        if eq_number == 1:
+            return exact_solution1_1(t)
+        elif eq_number == 2:
+            return exact_solution1_2(t)
+    elif ex_number == 2:
+        if eq_number == 1:
+            return exact_solution2_1(t)
+        elif eq_number == 2:
+            return exact_solution2_2(t)
+        elif eq_number == 3:
+            return exact_solution2_3(t)
+    elif ex_number == 3:
+        if eq_number == 1:
+            return exact_solution3_1(t)
+        elif eq_number == 2:
+            return exact_solution3_2(t)
+    elif ex_number == 4:
+        if eq_number == 1:
+            return exact_solution4_1(t)
+        elif eq_number == 2:
+            return exact_solution4_2(t)
+    return None
+
+def load_data(filename, max_points=1000):
+    try:
+        df = pd.read_csv(filename, sep=';')
+        for col in df.columns:
+            if df[col].dtype == object:
+                df[col] = df[col].astype(str).str.replace(',', '.').astype(float)
+        
+        return df
+    except Exception as e:
+        print(f"Ошибка при загрузке {filename}: {e}")
+        return None
+
+def create_universal_plots(df1, df2, H1, H2, EX_NUMBER):
+    n_equations = (len(df1.columns) - 1) // 3
+    if n_equations <= 2:
+        n_rows, n_cols = 1, 2
+        figsize = (14, 5)
+    elif n_equations <= 4:
+        n_rows, n_cols = 2, 2
+        figsize = (14, 10)
+    else:
+        n_rows, n_cols = 2, 3
+        figsize = (18, 10)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
+    fig.suptitle(f'Решение системы ОДУ (N={n_equations}) методом Адамса', 
+                 fontsize=14, fontweight='bold')
+    if n_equations == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+
+    for i in range(n_equations, len(axes)):
+        axes[i].set_visible(False)
+
+    t_values = sorted(set(df1['t'].tolist() + df2['t'].tolist()))
+
+    colors = {
+        'h1': 'blue',
+        'h2': 'red', 
+        'exact': 'green'
+    }
+
+    for i in range(n_equations):
+        ax = axes[i]
+        y_col = f'y{i+1}'
+        
+        # Заголовок для подграфика
+        ax.set_title(f'y{i+1}(t)', fontsize=11, fontweight='bold')
+        ax.set_xlabel('t', fontsize=9)
+        ax.set_ylabel(f'y{i+1}', fontsize=9)
+        ax.grid(True, alpha=0.3)
+        
+        # Численные решения
+        if y_col in df1.columns:
+            ax.plot(df1['t'], df1[y_col], 
+                   color=colors['h1'], linestyle='-', 
+                   label=f'h₁ = {H1}', linewidth=1.5, alpha=0.7)
+        
+        if y_col in df2.columns:
+            ax.plot(df2['t'], df2[y_col], 
+                   color=colors['h2'], linestyle='--', 
+                   label=f'h₂ = {H2}', linewidth=1.5, alpha=0.7)
+        
+        # Точное решение
+        y_exact = [get_exact_solution(t, i+1, EX_NUMBER) for t in t_values]
+        if y_exact[0] is not None: 
+            ax.plot(t_values, y_exact, 
+                   color=colors['exact'], linestyle='-', 
+                   label='точное решение', linewidth=2, alpha=0.8)
+        
+        ax.legend(loc='best', fontsize=8, framealpha=0.9)
+        
+        ax.minorticks_on()
+        ax.grid(True, which='major', alpha=0.6)
+        ax.grid(True, which='minor', alpha=0.2)
+    
+    plt.tight_layout()
+    return fig
+
+def add_max_row_to_csv(filename):
+    df = pd.read_csv(filename, sep=';')
+    max_values = {}
+    for col in df.columns:
+        if 'delta' in col:
+            max_values[col] = df[col].max()
+
+    new_row = {'t': 'MAX'} 
+    for col in df.columns:
+        if 'delta' in col:
+            new_row[col] = max_values[col]
+
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    df.to_csv(filename, sep=';', index=False)
+
+def maximum_delta(filename):
+    df = pd.read_csv(filename, sep=';')
+    max_values = {}
+    for col in df.columns:
+        if 'delta' in col:
+            max_values[col] = df[col].max()
+    return max_values
+
+def main():
+    if len(sys.argv) != 6:
+        print("Ошибка: неверное количество аргументов!")
+        return
+
+    FILE1 = sys.argv[1]
+    FILE2 = sys.argv[2]
+    
+    H1 = safe_float_convert(sys.argv[3])
+    H2 = safe_float_convert(sys.argv[4])
+    
+    if H1 is None or H2 is None:
+        print("ошибка: h1 и h2 должны быть числами!")
+        return
+    
+    EX_NUMBER = int(sys.argv[5])
+    
+    df1 = load_data(FILE1)
+    df2 = load_data(FILE2)
+    
+    if df1 is None or df2 is None:
+        print("Не удалось загрузить данные")
+        return
+    
+    
+    add_max_row_to_csv(FILE1)
+    add_max_row_to_csv(FILE2)
+
+    n = (len(df1.columns) - 1) // 3
+    for i in range(1, n+1):
+        print("max_delta" + str(i) + f" при h={H1}:   ", maximum_delta(FILE1)['delta' + str(i)])
+        print("max_delta" + str(i) + f" при h={H2}:   ", maximum_delta(FILE2)['delta' + str(i)])
+        print("отношение максимальных погрешностей:", maximum_delta(FILE1)['delta' + str(i)] / maximum_delta(FILE2)['delta' + str(i)])
+        print()
+
+
+    print(f"создание графиков...")
+
+    fig = create_universal_plots(df1, df2, H1, H2, EX_NUMBER)
+    plt.show()
+
+if __name__ == "__main__":
+    main()
+
+
+
