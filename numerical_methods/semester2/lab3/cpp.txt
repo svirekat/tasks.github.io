@@ -1,0 +1,394 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <iomanip> 
+#include <fstream>
+#include <cstdlib>
+#include <sstream>
+#include <string>
+using namespace std;
+
+int exNumber = 4;
+
+const string file1 = "results3.csv";
+const string file2 = "results4.csv";
+
+double h1 = 0.1;
+double h2 = h1 * 0.5;
+
+int N;
+vector<string> exact_sol;
+double const epsilon = 1e-9;
+
+struct SolutionPoint {
+    double t;
+    vector<double> y;
+
+    SolutionPoint(double t_, int n) : t(t_), y(n) {}
+};
+
+
+// правая часть системы
+void systemFunction(double t, const double y[], double dydt[]) {
+
+    // Пример 1
+    if (exNumber == 1) {
+        dydt[0] = 2 * y[1] -  y[0];
+        dydt[1] = 4 * y[1] - 3 * y[0] + exp(3 * t) / (exp(2 * t) + 1);
+    }
+    // Пример 2
+    else if (exNumber == 2) {
+        dydt[0] = y[0] + y[2] - y[1];
+        dydt[1] = y[0] + y[1] - y[2];
+        dydt[2] = 2 * y[0] - y[1];
+    }
+    // Пример 3
+    else if (exNumber == 3) {
+        dydt[0] = y[1] * y[1] -2 * t * y[1] - 2 * y[1] - y[0];
+        dydt[1] = 2 * y[0] + 2 * t * t + exp(2*t-2*y[1]);
+    }
+    // Пример 4
+    else if (exNumber == 4) {
+        dydt[0] = t / y[1];
+        dydt[1] = -t / y[0];
+    }
+    else
+        cerr << "ошибка: некорректный номер примера!";
+}
+
+void initializeN() {
+    if (exNumber == 1)
+        N = 2;
+    else if (exNumber == 2)
+        N = 3;
+    else if (exNumber == 3)
+        N = 2;
+    else if (exNumber == 4)
+        N = 2;
+    else 
+        cerr << "ошибка: некорректный номер примера!";
+}
+
+void initializeExactSolution() {
+    exact_sol.resize(N);
+
+    if (exNumber == 1) {
+        exact_sol[0] = "exp(t) + 2exp(2t) - exp(t)*ln(exp(2t) + 1) + 2exp(2t)*arctg(exp(t))";
+        exact_sol[1] = "exp(t) + 3exp(2t) - exp(t)*ln(exp(2t) + 1) + 3exp(2t)*arctg(exp(t))";
+    }
+    else if (exNumber == 2) {
+        exact_sol[0] = "1 + exp(2t) + exp(-t)";
+        exact_sol[1] = "exp(t) - 3exp(-t)";
+        exact_sol[2] = "exp(t) + exp(2t) - 5exp(-t)";
+    }
+    else if (exNumber == 3) {
+        exact_sol[0] = "-t^2";
+        exact_sol[1] = "t";
+    }
+    else if (exNumber == 4) {
+        exact_sol[0] = "exp(t^2)";
+        exact_sol[1] = "1/2 * exp(-t^2)";
+    }
+    else {
+        cerr << "ошибка: некорректный номер примера!";
+    }
+}
+
+void initializeInitialConditions(vector<double>& y0) {
+    y0.resize(N);
+    if (exNumber == 1) {
+        y0[0] = 3 - log(2) + 2*atan(1);  
+        y0[1] = 4 - log(2) + 3*atan(1); 
+    }
+    else if (exNumber == 2) {
+        y0[0] = 3; 
+        y0[1] = -2;  
+        y0[2] = -3; 
+    }
+    else if (exNumber == 3) {
+        y0[0] = 0;
+        y0[1] = 0;
+    }
+    else if (exNumber == 4) {
+        y0[0] = 1;
+        y0[1] = 0.5;
+    }
+    else {
+        cerr << "ошибка: некорректный номер примера!";
+    }
+}
+
+void initializeExact_y(double t, vector<double>& y_ex) {
+    y_ex.resize(N);
+    if (exNumber == 1) {
+        y_ex[0] = exp(t) + 2 * exp(2 * t) - exp(t) * log(exp(2 * t) + 1) + 2 * exp(2 * t) * atan(exp(t));
+        y_ex[1] = exp(t) + 3 * exp(2 * t) - exp(t) * log(exp(2 * t) + 1) + 3 * exp(2 * t) * atan(exp(t));
+    }
+    else if (exNumber == 2) {
+        y_ex[0] = 1 + exp(2 * t) + exp(-t);
+        y_ex[1] = exp(t) - 3 * exp(-t);
+        y_ex[2] = exp(t) + exp(2 * t) - 5 * exp(-t);
+    }
+    else if (exNumber == 3) {
+        y_ex[0] = - t*t;
+        y_ex[1] = t;
+    }
+    else if (exNumber == 4) {
+        y_ex[0] = exp(t * t);
+        y_ex[1] = 0.5 * exp(-t * t);
+    }
+    else {
+        cerr << "ошибка: некорректный номер примера!";
+    }
+}
+
+string vectorToString(const double y[], int n) {
+    stringstream ss;
+    ss.imbue(locale("C"));
+    for (int i = 0; i < n; i++) {
+        ss << fixed << setprecision(8) << y[i];
+        if (i < n - 1) ss << ";";
+    }
+    return ss.str();
+}
+
+void methodRungeKutta(
+    double t,
+    const double y[],
+    double h,
+    void (*f)(double, const double[], double[]),
+    double y_out[],
+    double k1[],
+    double k2[],
+    double k3[]
+)
+{
+    // k1 = f(t, y)
+    f(t, y, k1);
+
+    for (int i = 0; i < N; i++) {
+        k3[i] = y[i] + h * k1[i];
+    }
+
+    // k2 = f(t + h, y + h*k1)
+    f(t + h, k3, k2);
+
+    for (int i = 0; i < N; i++) {
+        y_out[i] = y[i] + h * (k1[i] + k2[i]) / 2.0;
+    }
+
+}
+
+vector<SolutionPoint> methodAdamsaForSystem(
+    double t0,
+    const vector<double>& y0,  // начальные условия
+    double tf,
+    double h,
+    void (*f)(double, const double[], double[])
+)
+{
+    vector<SolutionPoint> solution;
+    SolutionPoint first(t0, N);
+    for (int i = 0; i < N; i++)
+        first.y[i] = y0[i];
+    solution.push_back(first);
+
+    double* y_n_minus_1 = new double[N];
+    double* y_next = new double[N];
+    double* f_n_minus_1 = new double[N];
+    double* f_n_minus_2 = new double[N];
+    double* k1 = new double[N];
+    double* k2 = new double[N];
+    double* k3 = new double[N];
+
+    for (int i = 0; i < N; i++) {
+        y_n_minus_1[i] = y0[i];
+    }
+
+    double t_n_minus_1 = t0;
+    f(t_n_minus_1, y_n_minus_1, f_n_minus_1);
+
+    double t_next = t_n_minus_1 + h;
+    methodRungeKutta(t_n_minus_1, y_n_minus_1, h, f, y_next, k1, k2, k3);
+
+    SolutionPoint second(t_next, N);
+    for (int i = 0; i < N; i++)
+        second.y[i] = y_next[i];
+    solution.push_back(second);
+
+    for (int i = 0; i < N; i++) {
+        f_n_minus_2[i] = f_n_minus_1[i];
+    }
+
+    t_n_minus_1 = t_next;
+    for (int i = 0; i < N; i++) 
+        y_n_minus_1[i] = y_next[i];
+    f(t_n_minus_1, y_n_minus_1, f_n_minus_1);
+
+    while (t_n_minus_1 < tf - epsilon) {
+        if (t_n_minus_1 + h > tf)
+            h = tf - t_n_minus_1;
+
+        // формула Адамса для системы:
+        for (int i = 0; i < N; i++) 
+            y_next[i] = y_n_minus_1[i] + h * (1.5 * f_n_minus_1[i] - 0.5 * f_n_minus_2[i]);
+        t_next = t_n_minus_1 + h;
+
+        SolutionPoint point(t_next, N);
+        for (int i = 0; i < N; i++) 
+            point.y[i] = y_next[i];
+        solution.push_back(point);
+
+        for (int i = 0; i < N; i++) 
+            f_n_minus_2[i] = f_n_minus_1[i];
+        f(t_next, y_next, f_n_minus_1);
+
+        t_n_minus_1 = t_next;
+        for (int i = 0; i < N; i++) 
+            y_n_minus_1[i] = y_next[i];
+    }
+    delete[] y_n_minus_1;
+    delete[] y_next;
+    delete[] f_n_minus_1;
+    delete[] f_n_minus_2;
+    delete[] k1;
+    delete[] k2;
+    delete[] k3;
+
+    return solution;
+}
+
+string formatDouble(double value) {
+    stringstream ss;
+    ss.imbue(locale("C"));
+    ss << fixed << setprecision(8) << value;
+    return ss.str();
+}
+
+void runPythonScript(
+    const string& scriptName,
+    const string& file1,
+    const string& file2,
+    double h1,
+    double h2,
+    int exNumber)
+{
+    string h1_str = formatDouble(h1);
+    string h2_str = formatDouble(h2);
+    string ex_str = to_string(exNumber);
+
+#ifdef _WIN32
+    string command = "python " + scriptName +
+        " \"" + file1 + "\" \"" + file2 + "\" " +
+        h1_str + " " + h2_str + " " + ex_str;
+#endif
+
+    int result = system(command.c_str());
+    if (result != 0) 
+        cerr << "ошибка при выполнении Python скрипта!\nкод ошибки: " << result << endl;
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+
+    initializeN();
+    initializeExactSolution();
+
+    double t0 = 0.0;
+    double tf = 5.0;
+
+    vector<double> y0(N);  // вектор с начальными условиями
+    initializeInitialConditions(y0);
+
+    // решение с шагом h1
+    vector<SolutionPoint> solution = methodAdamsaForSystem(t0, y0, tf, h1, systemFunction);
+
+    ofstream outFile(file1);
+    if (outFile.is_open()) {
+        outFile.imbue(locale("C"));
+
+        outFile << "t";
+        for (int i = 0; i < N; i++) {
+            outFile << ";y" << i + 1;
+        }
+        for (int i = 0; i < N; i++) {
+            outFile << ";y_exact" << i + 1;
+        }
+        for (int i = 0; i < N; i++) {
+            outFile << ";delta" << i + 1;
+        }
+        outFile << "\n";
+
+        vector<double> y_ex;
+        for (const auto& point : solution) {
+            initializeExact_y(point.t, y_ex);
+
+            outFile << fixed << setprecision(8) << point.t;
+            for (int i = 0; i < N; i++) {
+                outFile << ";" << point.y[i];
+            }
+            for (int i = 0; i < N; i++) {
+                outFile << ";" << y_ex[i];
+            }
+            for (int i = 0; i < N; i++) {
+                outFile << ";" << fabs(y_ex[i] - point.y[i]);
+            }
+            outFile << "\n";
+        }
+        outFile.close();
+        cout << " \nданные успешно записаны в  " << file1 << endl;
+    }
+    else {
+        cerr << "ошибка: не удалось создать файл " << file1 << "!\n";
+    }
+
+    // решение с шагом h2
+    solution = methodAdamsaForSystem(t0, y0, tf, h2, systemFunction);
+
+    ofstream outFile2(file2);
+    if (outFile2.is_open()) {
+        outFile2.imbue(locale("C"));
+
+        outFile2 << "t";
+        for (int i = 0; i < N; i++) {
+            outFile2 << ";y" << i + 1;
+        }
+        for (int i = 0; i < N; i++) {
+            outFile2 << ";y_exact" << i + 1;
+        }
+        for (int i = 0; i < N; i++) {
+            outFile2 << ";delta" << i + 1;
+        }
+        outFile2 << "\n";
+
+        vector<double> y_ex;
+        for (const auto& point : solution) {
+            initializeExact_y(point.t, y_ex);
+
+            outFile2 << fixed << setprecision(8) << point.t;
+            for (int i = 0; i < N; i++) {
+                outFile2 << ";" << point.y[i];
+            }
+            for (int i = 0; i < N; i++) {
+                outFile2 << ";" << y_ex[i];
+            }
+            for (int i = 0; i < N; i++) {
+                outFile2 << ";" << fabs(y_ex[i] - point.y[i]);
+            }
+            outFile2 << "\n";
+        }
+        outFile2.close();
+        cout << " \nданные успешно записаны в  " << file2 << endl;
+    }
+    else {
+        cerr << "ошибка: не удалось создать файл " << file2 << "!\n";
+    }
+    cout << "\nточное решение системы:\n";
+    for (int i = 0; i < exact_sol.size(); i++) {
+        cout << "y[" << i + 1 << "] = " << exact_sol[i] << "\n";
+    }
+    cout << endl;
+    runPythonScript("plot_results.py", file1, file2, h1, h2, exNumber);
+
+    return 0;
+}
