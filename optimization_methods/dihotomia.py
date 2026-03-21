@@ -4,10 +4,8 @@ delta = 0.2
 def f(x):
     return x*x - 4*x + 6
 
-a = []
-b = []
-a.append(0)
-b.append(10)
+a = [0]
+b = [10]
 
 print("\n\nпоиск минимума функции методом Дихотомии\n")
 k = 0
@@ -21,15 +19,15 @@ while (True):
     fy, fz = f(y), f(z)
     print(f"Сравнение f(y_{k}) и f(z_{k}):")
     if fy <= fz:
-        ## a_k не изменится
+        ## a_k+1 = a_k
         a.append(a[k])
-        ## b_k = z
+        ## b_k+1 = z
         b.append(z)
         print(f'f(y_{k}) = {fy:.4f} < f(z_{k}) = {fz:.4f}   ->  b[{k+1}] = z_{k} = {z:.4f}')
     else:
-        ## b_k не изменится
+        ## b_k+1 = b_k
         b.append(b[k])
-        ## a[k+1] = y
+        ## a_k+1 = y
         a.append(y)
         print(f'f(y_{k}) = {fy:.4f} > f(z_{k}) = {fz:.4f}   ->  a[{k+1}] = y_{k} = {y:.4f}')
 
