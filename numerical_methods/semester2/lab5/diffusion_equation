@@ -1,0 +1,320 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <iomanip>
+#include <cstdlib>
+#include <cmath>
+#include <locale>
+using namespace std;
+const double pi = 3.14159265358979323846;
+
+const int exampleNum = 3;
+
+double a1, b1, a2, b2, T;
+double alpha;
+
+const string file = "results.csv";
+string exact_sol;
+
+// функция для начального условия
+double u0(double x, double y) {
+	if (exampleNum == 1)
+		return y * cos(x);
+	if (exampleNum == 2)
+		return 0;
+	if (exampleNum == 3)
+		return sin(x) * sin(y);
+}
+
+// функции для граничных условий
+double g1(double y, double t) {
+	if (exampleNum == 1)
+		return exp(-t) * y;
+	if (exampleNum == 2)
+		return 0;
+	if (exampleNum == 3)
+		return 0;
+}
+double g2(double y, double t) {
+	if (exampleNum == 1)
+		return 0;
+	if (exampleNum == 2)
+		return pi * y * sin(t);
+	if (exampleNum == 3)
+		return 0;
+}
+double f1(double x, double t) {
+	if (exampleNum == 1)
+		return 0;
+	if (exampleNum == 2)
+		return 0;
+	if (exampleNum == 3)
+		return 0;
+}
+double f2(double x, double t) {
+	if (exampleNum == 1)
+		return pi * exp(-t) * cos(x);
+	if (exampleNum == 2)
+		return pi * x * sin(t);
+	if (exampleNum == 3)
+		return 0;
+}
+
+// функция источника
+double p(double x, double y, double t) {
+	if (exampleNum == 1)
+		return 0;
+	if (exampleNum == 2)
+		return cos(t) * x * y;
+	if (exampleNum == 3)
+		return 0;
+}
+
+void initializeEquation() {
+	if (exampleNum == 1) {
+		a1 = 0;
+		b1 = 0;
+		a2 = pi;
+		b2 = pi;
+		T = 2;
+		alpha = 1;
+	}
+	else if (exampleNum == 2) {
+		a1 = 0;
+		b1 = 0;
+		a2 = pi;
+		b2 = pi;
+		T = 5;
+		alpha = 1;
+	}
+	else if (exampleNum == 3) {
+		a1 = -pi;
+		b1 = -pi;
+		a2 = pi;
+		b2 = pi;
+		T = 4;
+		alpha = 0.5;
+	}
+}
+
+// строка для вывода точного решения
+void initializeExactSolString() {
+	if (exampleNum == 1)
+		exact_sol = "exp(-t) * y * cos(x)";
+	else if (exampleNum == 2)
+		exact_sol = "x * y * sin(t)";
+	else if (exampleNum == 3)
+		exact_sol = "sin(x) * sin(y) * exp(-t)";
+}
+
+// функция точного решения u(x, y, t)
+double exactSolution(double x, double y, double t) {
+	if (exampleNum == 1)
+		return exp(-t) * y * cos(x);
+	else if (exampleNum == 2)
+		return x * y * sin(t);
+	else if (exampleNum == 3)
+		return sin(x) * sin(y) * exp(-t);
+}
+
+void progonka(double a, double b, double c, const vector<double>& d, vector<double>& x, int N) {
+	vector<double> alpha(N);
+	vector<double> beta(N);
+
+	// прямой ход:
+	alpha[0] = c / b;
+	beta[0] = d[0] / b;
+	for (int i = 1; i < N; i++) {
+		double znamenatel = a * alpha[i - 1] + b;
+		alpha[i] = -c / znamenatel;
+		beta[i] = (d[i] - a * beta[i - 1]) / znamenatel;
+	}
+	// обратный ход:
+	x[N - 1] = beta[N - 1];
+	for (int i = N - 2; i >= 0; --i) {
+		x[i] = alpha[i] * x[i + 1] + beta[i];
+	}
+}
+
+// метод переменных направлений 
+void FindSolution(
+	int N_t, int N_x, int N_y, 
+	double tau, double h_x, double h_y,
+	const string& filename,
+	int outputInterval = 1)
+{
+	double gamma_x = alpha * tau / (2 * h_x * h_x);
+	double gamma_y = alpha * tau / (2 * h_y * h_y);
+
+	vector<double> x(N_x + 1);
+	vector<double> y(N_y + 1);
+	for (int i = 0; i <= N_x; ++i) x[i] = i * h_x;
+	for (int j = 0; j <= N_y; ++j) y[j] = j * h_y;
+
+	// текущий слой u^n
+	vector<vector<double>> u_old(N_x + 1, vector<double>(N_y + 1, 0.0));
+	// промежуточный слой u^{n+1/2}
+	vector<vector<double>> u_half(N_x + 1, vector<double>(N_y + 1, 0.0));
+
+	ofstream outFile(filename);
+	if (!outFile.is_open()) {
+		cerr << "Cannot open file " << filename << endl;
+		return;
+	}
+	outFile.imbue(locale("C"));
+	outFile << "x;y;t;u;u_exact;abs_error\n";
+	outFile << fixed << setprecision(6);
+
+	// начальное условие
+	for (int i = 0; i <= N_x; i++)
+		for (int j = 0; j <= N_y; j++)
+			u_old[i][j] = u0(x[i], y[j]);
+	
+	// наложение граничных условий (если начальное не согласовано)
+	for (int j = 0; j <= N_y; ++j) {
+		u_old[0][j] = g1(y[j], 0);
+		u_old[N_x][j] = g2(y[j], 0);
+	}
+	for (int i = 0; i <= N_x; ++i) {
+		u_old[i][0] = f1(x[i], 0);
+		u_old[i][N_y] = f2(x[i], 0);
+	}
+
+	// Запись начального слоя (t=0)
+	double t = 0.0;
+	for (int i = 0; i <= N_x; ++i) {
+		for (int j = 0; j <= N_y; ++j) {
+			double exact = exactSolution(x[i], y[j], t);
+			double error = fabs(u_old[i][j] - exact);
+			outFile << x[i] << ";" << y[j] << ";" << t << ";" << u_old[i][j] << ";" << exact << ";" << error << "\n";
+		}
+	}
+
+	for (int k = 0; k < N_t; ++k) {
+		double t_current = k * tau;           // t_k
+		double t_half = t_current + tau / 2;    // t_{k+1/2}
+		double t_next = t_current + tau;      // t_{k+1}
+		// первый полушаг (неявно по х)
+		for (int j = 1; j <= N_y - 1; j++) {
+			vector<double> R(N_x - 1);
+			for (int i = 1; i <= N_x - 1; i++) {
+				double source = p(x[i], y[j], t_half);
+				int idx = i - 1;
+				R[idx] = u_old[i][j] + gamma_y * (u_old[i][j + 1] - 2 * u_old[i][j] + u_old[i][j - 1]) + (tau / 2) * source;
+			}
+			R[0] += gamma_x * g1(y[j], t_half);
+			R[N_x - 2] += gamma_x * g2(y[j], t_half);
+
+			vector<double> sol(N_x - 1);
+			progonka(-gamma_x, 1 + 2 * gamma_x, -gamma_x, R, sol, N_x - 1);
+
+			for (int i = 1; i <= N_x - 1; ++i) {
+				u_half[i][j] = sol[i - 1];
+			}
+		}
+
+		for (int j = 0; j <= N_y; ++j) {
+			u_half[0][j] = g1(y[j], t_half);
+			u_half[N_x][j] = g2(y[j], t_half);
+		}
+		for (int i = 0; i <= N_x; ++i) {
+			u_half[i][0] = f1(x[i], t_half);
+			u_half[i][N_y] = f2(x[i], t_half);
+		}
+
+		// второй полушаг (неявно по y)
+		vector<vector<double>> u_new(N_x + 1, vector<double>(N_y + 1, 0.0));
+		for (int i = 1; i <= N_x - 1; i++) {
+
+			vector<double> S(N_y - 1);
+			for (int j = 1; j <= N_y - 1; j++) {
+				double source = p(x[i], y[j], t_half);
+				int idx = j - 1;
+				S[idx] = u_half[i][j] + gamma_x * (u_half[i + 1][j] - 2 * u_half[i][j] + u_half[i - 1][j]) + (tau / 2) * source;
+			}
+
+			S[0] += gamma_y * f1(x[i], t_next);
+			S[N_y - 2] += gamma_y * f2(x[i], t_next);
+
+			vector<double> sol(N_y - 1);
+			progonka(-gamma_y, 1 + 2 * gamma_y, -gamma_y, S, sol, N_y - 1);
+
+			for (int j = 1; j <= N_y - 1; ++j) {
+				u_new[i][j] = sol[j - 1];
+			}
+		}
+		for (int j = 0; j <= N_y; ++j) {
+			u_new[0][j] = g1(y[j], t_next);
+			u_new[N_x][j] = g2(y[j], t_next);
+		}
+		for (int i = 0; i <= N_x; ++i) {
+			u_new[i][0] = f1(x[i], t_next);
+			u_new[i][N_y] = f2(x[i], t_next);
+		}
+		u_old = move(u_new);
+
+		if ((k + 1) % outputInterval == 0) {
+			for (int i = 0; i <= N_x; ++i) {
+				for (int j = 0; j <= N_y; ++j) {
+					double exact = exactSolution(x[i], y[j], t_next);
+					double error = fabs(u_old[i][j] - exact);
+					outFile << x[i] << ";" << y[j] << ";" << t_next << ";" << u_old[i][j] << ";" << exact << ";" << error << "\n";
+				}
+			}
+		}
+	}
+	if (N_t % outputInterval != 0) {
+		double t_final = N_t * tau;
+		for (int i = 0; i <= N_x; ++i)
+			for (int j = 0; j <= N_y; ++j) {
+				double exact = exactSolution(x[i], y[j], t_final);
+				double error = fabs(u_old[i][j] - exact);
+				outFile << x[i] << ";" << y[j] << ";" << t_final << ";" << u_old[i][j] << ";" << exact << ";" << error << "\n";
+			}
+	}
+	outFile.close();
+}
+
+bool runPythonScript(const string& scriptPath, const string& csvFilePath) {
+
+	string command = "python " + scriptPath + " \"" + csvFilePath + "\"";
+	int exitCode = system(command.c_str());
+
+	if (exitCode != 0) {
+		cerr << "ошибка: python скрипт завершился с кодом " << exitCode << endl;
+		return false;
+	}
+	return true;
+}
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+
+	initializeEquation();
+	int N_x, N_y;
+	cout << "введите N_x, N_y (числа разбиений отрезков [" << a1 << "; " << a2 << "] и  " << "[" << b1 << "; " << b2 << "] )\n";
+	cin >> N_x >> N_y;
+
+	double h_x = (a2-a1) / N_x;
+	double h_y = (b2-b1) / N_y;
+	cout << "шаги: h_x = " << h_x << ", h_y = " << h_y << "\n";
+
+	int N_t;
+	cout << "введите N_t (число разбиения отрезка [0; " << T << "] )\n";
+	cin >> N_t;
+	double tau = T / N_t;
+	cout << "\nшаг по времени: tau = " << tau << "\n";
+
+	vector<vector<double>> u;
+	vector<double> x, y;
+	FindSolution(N_t, N_x, N_y, tau, h_x, h_y, file, 2);
+	cout << "\nданные успешно записаны в файл " << file << endl;
+
+	string animation_script = "animation.py";
+	if (!runPythonScript(animation_script, file)) {
+		cerr << "не удалось выполнить скрипт визуализации =(" << endl;
+	}
+
+	return 0;
+}
