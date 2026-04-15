@@ -1,0 +1,19 @@
+import sqlite3
+
+con = sqlite3.connect('db01.db')
+cur = con.cursor()
+cur.execute('CREATE TABLE IF NOT EXISTS excursovods (id INTEGER PRIMARY KEY, name VARCHAR(30), age INTEGER, bio TEXT, place VARCHAR(100))')
+cur.execute('CREATE TABLE IF NOT EXISTS places (id INTEGER PRIMARY KEY, name VARCHAR(100), ticket_cost INTEGER)')
+
+sql1 = '''INSERT INTO excursovods (name, age, bio, place) VALUES(?, ?, ?, ?)'''
+cur.execute(sql1, ("Ivan Domov", 41, "", "Lago Naki"))
+cur.execute(sql1, ("Alina Gromova", 38, "", "Lago Naki"))
+cur.execute(sql1, ("Mihail Medved", 29, "", "Everest"))
+cur.execute(sql1, ("Olga Lampova", 44, "", "Sochi"))
+
+sql2 = '''INSERT INTO places (name, ticket_cost) VALUES(?, ?)'''
+cur.execute(sql2, ("Lago Naki", 6000))
+cur.execute(sql2, ("Sochi", 3000))
+cur.execute(sql2, ("Everest", 15000))
+
+print(cur.lastrowid)
