@@ -172,7 +172,10 @@ def NewtonMethod(x_start, Raphson):
             flag = False
         x = x_new
         k += 1
-
+if Raphson:
+    print(f'\nпоиск минимума методом Ньютона-Рафсона')
+else:
+    print(f'\nпоиск минимума методом Ньютона')
 ans = NewtonMethod(x0, Raphson)
 print('\nминимум функции f = x1^2 + 5x2^2 + x1x2 + x1:')
 print(f'x1={ans[0]:.4f}, x2={ans[1]:.4f}')
