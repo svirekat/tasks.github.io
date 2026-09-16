@@ -1,0 +1,34 @@
+alphabet = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ "
+N = len(alphabet)
+
+def caesar(text, key):
+    res = []
+    for i in range(len(text)):
+        c = text[i].upper()
+        if c in alphabet:
+            index = alphabet.index(c)
+            res.append(alphabet[(index + key) % N])
+        else:
+            print("такой буквы нет в алфавите")
+            return ''
+    return ''.join(res)
+
+def caesar_decrypt(text, key):
+    res = []
+    for i in range(len(text)):
+        c = text[i].upper()
+        if c in alphabet:
+            index = alphabet.index(c)
+            res.append(alphabet[(index - key) % N])
+        else:
+            print("такой буквы нет в алфавите")
+            return ''
+    return ''.join(res)
+
+text = input("text: ")
+key = int(input("key: "))
+print("зашифрованное сообщение: ", caesar(text, key))
+
+text = input("text: ")
+key = int(input("key: "))
+print("расшифрованное сообщение: ", caesar_decrypt(text, key))
