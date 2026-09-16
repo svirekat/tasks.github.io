@@ -1,0 +1,40 @@
+import random
+
+alphabet = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+N = len(alphabet)
+
+def monoalph(text):
+    new_alph = "".join(random.sample(alphabet, N))
+    print("new alphabet: ", new_alph)
+    res = []
+    for i in range(len(text)):
+        c = text[i].upper()
+        if c in alphabet:
+            index = alphabet.index(c)
+            res.append(new_alph[index])
+        elif c == ' ':
+            res.append(' ')
+        else:
+            print("такой буквы нет в алфавите")
+            return ''
+    return ''.join(res)
+
+def monoalph_decrypt(text, new_alph):
+    res = []
+    for i in range(len(text)):
+        c = text[i].upper()
+        if c in alphabet:
+            index = new_alph.index(c)
+            res.append(alphabet[index])
+        elif c == ' ':
+            res.append(' ')
+        else:
+            print("такой буквы нет в алфавите")
+            return ''
+    return ''.join(res)
+
+text = input("text: ")
+print("зашифрованное сообщение: ", monoalph(text))
+text = input("shifr: ")
+key = input("key: ")
+print("расшифрованное сообщение: ", monoalph_decrypt(text, key))
