@@ -1,0 +1,50 @@
+import random
+
+alphabet = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+N = len(alphabet)
+
+def kamasutra(text):
+    new_alph = "".join(random.sample(alphabet, N))
+    half1 = new_alph[:(N // 2)]
+    half2 = new_alph[(N // 2):]
+    print(half1, half2)
+
+    res = []
+    for i in range(len(text)):
+        c = text[i].upper()
+        if c in half1:
+            index = half1.index(c)
+            res.append(half2[index])
+        elif c in half2:
+            index = half2.index(c)
+            res.append(half1[index])
+        elif c == ' ':
+            res.append(' ')
+        else:
+            print("такой буквы нет в алфавите")
+            return ''
+    return ''.join(res)
+
+def kamasutra_decrypt(text, half1, half2):
+    res = []
+    for i in range(len(text)):
+        c = text[i].upper()
+        if c in half1:
+            index = half1.index(c)
+            res.append(half2[index])
+        elif c in half2:
+            index = half2.index(c)
+            res.append(half1[index])
+        elif c == ' ':
+            res.append(' ')
+        else:
+            print("такой буквы нет в алфавите")
+            return ''
+    return ''.join(res)
+
+text = input("text: ")
+print("зашифрованное сообщение: ", kamasutra(text))
+text = input("shifr: ")
+print("halfs of alphabet:")
+half1, half2 = input(), input()
+print("зашифрованное сообщение: ", kamasutra_decrypt(text, half1, half2))
